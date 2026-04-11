@@ -2,10 +2,7 @@
 GEMINI.md
 
 # Compiled Binaries
-Testing/test_01schoolbook
-Testing/test_02karatsuba
-Testing/test_03toom
-Testing/test_04ntt
+Testing/test_*
 
 # Configuration/Formatting
 .clang-format

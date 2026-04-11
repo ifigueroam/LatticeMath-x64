@@ -26,7 +26,7 @@ static void fast_ntt(T* a, size_t n, T q, const T* twiddles, size_t twiddle_step
     }
 }
 
-static int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q) {
+int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q) {
     size_t N = 1;
     while (N < 2 * n - 1) N <<= 1;
 
@@ -58,6 +58,7 @@ static int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q) {
     return 0;
 }
 
+#ifndef BENCHMARK
 int main(void) {
     size_t n = 8;
     T q = 7681;
@@ -84,3 +85,4 @@ int main(void) {
 
     return 0;
 }
+#endif

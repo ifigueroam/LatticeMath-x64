@@ -11,8 +11,8 @@
 #include "simd.h"
 #include "zq.h"
 
-static void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* restrict b,
-                                        size_t n, T q, size_t threshold) {
+void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q,
+                                 size_t threshold) {
     size_t nhalf = n >> 1;
     size_t i;
 
@@ -59,6 +59,7 @@ static void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, cons
     poly_release_workspace(tmp_size);
 }
 
+#ifndef BENCHMARK
 int main(void) {
     size_t n = 8;
     T q = 7681;
@@ -86,3 +87,4 @@ int main(void) {
 
     return 0;
 }
+#endif

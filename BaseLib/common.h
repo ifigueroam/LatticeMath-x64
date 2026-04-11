@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 
 #if defined(__x86_64__) || defined(_M_X64)
 #include <immintrin.h>
@@ -21,8 +22,18 @@
 #define ALIGN_MEM
 #endif
 
+/**
+ * @brief Returns current time in nanoseconds for high-precision benchmarking.
+ */
+static inline uint64_t get_time_ns(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+}
+
 /*
  * Coefficient type selection: Default to 16-bit coefficients if neither is defined.
+...
  * This allows flexibility in choosing between 16-bit and 32-bit coefficients based
  * on the application's needs.
  */

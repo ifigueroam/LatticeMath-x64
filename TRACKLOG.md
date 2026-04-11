@@ -84,4 +84,23 @@ Style) and text-wrapping (`fold`) to ensure no line in the entire project—C fi
 or Markdown—exceeds a strict **105-column limit**.
 
 ---
+
+## 4. Multi-Core Performance Engineering & Deployment
+**Date: 2026-04-11 (Current Session)**
+
+This milestone expanded the library's scope into parallel computing and established its global 
+presence.
+
+- **Benchmarking Engine:** Developed `05benchmark.c` to evaluate algorithms across $n \in \{256, 512, 
+768, 1024\}$ using high-resolution nanosecond timing (`get_time_ns`).
+- **Parallelization:** Integrated **OpenMP** to leverage multi-core CPU architectures.
+- **The Parallelism Paradox:** Identified a critical performance regression where 4-core execution was 
+slower than 1-core for Schoolbook. Conducted deep analysis attributing this to **Atomic Contention** and 
+**Cache Line Bouncing (False Sharing)**.
+- **GitHub Deployment:** Officially registered and pushed the project to GitHub 
+(`ifigueroam/LatticeMath-x64`) using **SSH (Ed25519)** authentication.
+- **Documentation Mandate:** Established a permanent rule in `GEMINI.md` to automatically update 
+user-level (README), technical (DEVLOG), and historical (TRACKLOG) documentation after every change.
+
+---
 *End of Tracklog.*

@@ -9,7 +9,7 @@
 #include "poly.h"
 #include "zq.h"
 
-static void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q) {
+void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q) {
     if (n % 3 != 0) return;
     if (q % 3 == 0) return;
 
@@ -87,6 +87,7 @@ static void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict 
     poly_release_workspace(nsplit * 6);
 }
 
+#ifndef BENCHMARK
 int main(void) {
     size_t n = 9;  // Synchronized to multiple of 3
     T q = 7681;
@@ -110,3 +111,4 @@ int main(void) {
 
     return 0;
 }
+#endif

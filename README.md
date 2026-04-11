@@ -9,9 +9,9 @@ architectures, it provides a foundation for high-speed lattice-based cryptograph
 ## Project Hierarchy
 ```bash
 LatticeMath-x64/
-├── BaseLib/      # Headers, SIMD Intrinsics, Barrett Reduction
+├── BaseLib/      # Headers, SIMD Intrinsics, Barrett Reduction, Timing
 ├── CoreLib/      # Memory Arena, Poly Utilities, Randomness, Config Loader
-├── Scripts/      # Optimized Algorithms (Karatsuba, Toom-Cook, Fast NTT)
+├── Scripts/      # Algorithms (Karatsuba, Toom-Cook, NTT, Benchmark)
 ├── Testing/      # Compiled Performance Binaries
 ├── input_config  # Text-based input for custom polynomials A and B
 └── Makefile      # Native x64 Build System with Auto-Formatting
@@ -35,6 +35,9 @@ simultaneously using 256-bit registers.
 Implemented a **Global Scratchpad Arena** in `CoreLib/poly.c`. This ensures temporary data stays 
 resident in **L1/L2 CPU caches**, avoiding stack/heap allocation overhead.
 
+### 5. Multi-Core Benchmark Tier (Current)
+Integrated **OpenMP** and high-resolution timing to evaluate algorithms on 1 vs. 4+ cores.
+
 ---
 
 ## Configuration & Usage
@@ -55,15 +58,12 @@ make format    # Wraps all code and text to 105 columns
 make all       # Compiles all optimized benchmarks
 ```
 
-### 3. Running Synchronized Benchmarks
-All algorithms are synchronized to perform **Linear Convolution** (Full Product) for direct comparison:
+### 3. Running Performance Benchmarks
+Execute the multi-threaded benchmark suite to see performance scaling across different $n$ sizes:
 ```bash
-./Testing/test_01schoolbook  # O(n^2) Linear Product
-./Testing/test_02karatsuba   # Optimized Karatsuba (SIMD + Arena)
-./Testing/test_03toom        # Optimized Toom-Cook (Arena + n=9 padding)
-./Testing/test_04ntt         # Fast NTT (O(n log n))
+./Testing/test_05benchmark  # Comprehensive Performance Grid
 ```
 
 ## Usability: Object-Oriented C
 The framework supports an initial `Poly` structure (see `BaseLib/api.h`) to encapsulate alignment, 
-degree, and modulus, facilitating easier integration into larger C++ projects or research scripts.
+degree, and modulus, facilitating easier integration into larger projects.
