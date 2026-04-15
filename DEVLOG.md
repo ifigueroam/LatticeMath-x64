@@ -93,6 +93,7 @@ and a Global Arena. The system is confirmed stable for $n=256, q=7681$.
 - **Actions:**
     - Created `.clang-format` with `ColumnLimit: 105`.
     - Added `make format` to the Makefile.
+    - Updated `GEMINI.md` with a permanent documentation and formatting mandate.
 
 ---
 
@@ -191,6 +192,32 @@ sequence maximizes CPU execution unit throughput.
 `Scripts/02karatsuba.c`.
 - **Reasoning:** Base-case batching allows the compiler to generate linear instruction streams 
 that scale with register width (Edamatsu, 2023).
+
+---
+
+## [2026-04-15] Corrected NTT Implementation (Mathematical Consistency)
+**Objective:** Resolve the mathematical discrepancy detected in the optimized NTT logic.
+
+**Technical Audit:**
+- **Issue:** The previous "CT/GS Duality" implementation suffered from twiddle factor 
+desynchronization and insufficient padding for linear convolution.
+- **Correction:** Re-implemented a robust **Iterative Decimation-in-Time (DIT)** NTT. 
+- **Padding:** Enforced transform size $N \ge 2n - 1$ to prevent cyclic convolution wrap-around.
+- **Validation:** Successfully synchronized NTT output with Schoolbook, Karatsuba, and Toom-Cook 
+results.
+
+---
+
+## [2026-04-15] Research Tools Organization & Directory Cleanup
+**Objective:** Consolidate mathematical verification scripts and clean up the repository root.
+
+**Actions:**
+- Created the **`Tools/`** directory to house Python research scripts.
+- Migrated `test_ntt_math.py`, `test_ntt_math2.py`, and `test_ntt_swap.py` to the new folder.
+- Enriched all Python scripts with detailed technical comments explaining their role in NTT 
+prototyping and ground-truth generation.
+- Created `Tools/README.md` to document the purpose and historical value of the research 
+scaffolding for future project audits.
 
 ---
 
