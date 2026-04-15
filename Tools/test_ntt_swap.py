@@ -1,9 +1,21 @@
+"""
+test_ntt_swap.py
+----------------
+Purpose: Debugging Twiddle Factor Interleaving logic.
+
+This script prototyped the Sequential Twiddle Table access pattern.
+It verified how twiddle factors should be re-ordered in memory so that 
+multi-core and SIMD-optimized butterfly loops can access them using a 
+simple linear index (t++), maximizing cache hit rates.
+"""
+
 q = 7681
 
 def ntt_gs_swapped(a, n, w):
+    """GS NTT with sequential twiddle table access."""
     t = 0
     twiddles = []
-    # Precompute twiddles
+    # Pre-order twiddles for sequential consumption
     for l in range(n.bit_length()-1, 0, -1):
         length = 1 << (l-1)
         for j in range(length):
@@ -23,6 +35,7 @@ def ntt_gs_swapped(a, n, w):
     return a
 
 def ntt_ct_swapped(a, n, winv):
+    """CT NTT with sequential twiddle table access."""
     t = 0
     twiddles = []
     for l in range(1, n.bit_length()):
@@ -43,6 +56,7 @@ def ntt_ct_swapped(a, n, winv):
                 a[i+length+j] = (u - v + q) % q
     return a
 
+# Test case for A * A linear convolution
 a = [1, 2, 3, 4, 5, 6, 7, 8]
 N = 16
 for i in range(2, q):
@@ -58,5 +72,5 @@ c_pad = ntt_ct_swapped(C.copy(), N, w16inv)
 ninv = pow(N, -1, q)
 c_pad = [(x * ninv)%q for x in c_pad]
 
+print("Linear convolution result (using sequential twiddles):")
 print(c_pad[:15])
-
