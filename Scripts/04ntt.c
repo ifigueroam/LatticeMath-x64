@@ -1,26 +1,29 @@
 /**
  * @file 04ntt.c
- * @brief Section 2.2.4: Number-theoretic transform
+ * @brief Section 2.2.4: Number-theoretic transform (Mathematically Correct Iterative NTT)
  */
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "poly.h"
 #include "zq.h"
 
-static void fast_ntt(T* a, size_t n, T q, const T* twiddles, size_t twiddle_step) {
+// Standard DIT NTT (In-place)
+static void ntt_core(T* a, size_t n, T q, const T* twiddles) {
     bitreverse(a, n);
     for (size_t len = 2; len <= n; len <<= 1) {
         size_t half = len >> 1;
-        size_t step = (n / len) * twiddle_step;
+        size_t step = n / len;
         for (size_t i = 0; i < n; i += len) {
             for (size_t j = 0; j < half; j++) {
                 T w = twiddles[j * step];
                 T u = a[i + j];
-                T v = zq_mod((T2)a[i + j + half] * w, q);
-                a[i + j] = zq_mod((T2)u + v, q);
-                a[i + j + half] = zq_mod((T2)u + q - v, q);
+                // Standard arithmetic for stability during verification
+                T v = (T)zq_mod((T2)a[i + j + half] * w, q);
+                a[i + j] = (T)zq_mod((T2)u + v, q);
+                a[i + j + half] = (T)zq_mod((T2)u + q - v, q);
             }
         }
     }
@@ -28,33 +31,49 @@ static void fast_ntt(T* a, size_t n, T q, const T* twiddles, size_t twiddle_step
 
 int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q) {
     size_t N = 1;
+    // Linear product of n-degree polynomials requires N >= 2n-1
     while (N < 2 * n - 1) N <<= 1;
 
     T root = zq_primitiveRootOfUnity(N, q);
-    T a_pad[N], b_pad[N], antt[N], bntt[N], cntt[N], twiddles[N], twiddles_inv[N];
-
-    memset(a_pad, 0, N * sizeof(T));
-    memset(b_pad, 0, N * sizeof(T));
-    memcpy(a_pad, a, n * sizeof(T));
-    memcpy(b_pad, b, n * sizeof(T));
-
-    twiddles[0] = 1;
-    for (size_t i = 1; i < N; i++) twiddles[i] = zq_pow(root, i, q);
-
-    memcpy(antt, a_pad, N * sizeof(T));
-    fast_ntt(antt, N, q, twiddles, 1);
-    memcpy(bntt, b_pad, N * sizeof(T));
-    fast_ntt(bntt, N, q, twiddles, 1);
-
-    for (size_t i = 0; i < N; i++) cntt[i] = zq_mod((T2)antt[i] * bntt[i], q);
-
     T rootinv = zq_inverse(root, q);
-    twiddles_inv[0] = 1;
-    for (size_t i = 1; i < N; i++) twiddles_inv[i] = zq_pow(rootinv, i, q);
-    fast_ntt(cntt, N, q, twiddles_inv, 1);
 
+    T *a_p, *b_p, *tw, *twinv;
+    posix_memalign((void**)&a_p, 32, N * sizeof(T));
+    posix_memalign((void**)&b_p, 32, N * sizeof(T));
+    posix_memalign((void**)&tw, 32, (N / 2) * sizeof(T));
+    posix_memalign((void**)&twinv, 32, (N / 2) * sizeof(T));
+
+    memset(a_p, 0, N * sizeof(T));
+    memset(b_p, 0, N * sizeof(T));
+    memcpy(a_p, a, n * sizeof(T));
+    memcpy(b_p, b, n * sizeof(T));
+
+    for (size_t i = 0; i < N / 2; i++) {
+        tw[i] = zq_pow(root, i, q);
+        twinv[i] = zq_pow(rootinv, i, q);
+    }
+
+    ntt_core(a_p, N, q, tw);
+    ntt_core(b_p, N, q, tw);
+
+    // Point-wise multiplication
+    for (size_t i = 0; i < N; i++) {
+        a_p[i] = (T)zq_mod((T2)a_p[i] * b_p[i], q);
+    }
+
+    // Inverse NTT
+    ntt_core(a_p, N, q, twinv);
+
+    // Scaling by N^-1
     T ninv = zq_inverse(N, q);
-    for (size_t i = 0; i < 2 * n - 1; i++) c[i] = zq_mod((T2)cntt[i] * ninv, q);
+    for (size_t i = 0; i < 2 * n - 1; i++) {
+        c[i] = (T)zq_mod((T2)a_p[i] * ninv, q);
+    }
+
+    free(a_p);
+    free(b_p);
+    free(tw);
+    free(twinv);
     return 0;
 }
 
@@ -62,15 +81,14 @@ int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q) {
 int main(void) {
     size_t n = 8;
     T q = 7681;
-    T a[n] ALIGN_MEM, b[n] ALIGN_MEM;
-    T c[2 * n - 1] ALIGN_MEM;
+    T a[n], b[n], c[2 * n - 1];
 
     printf("--- NTT Multiplication Test ---\n");
     printf("Method: O(n log n) Frequency-domain transform.\n");
-    printf("Step 1: Pad polynomials to power-of-2 size N.\n");
-    printf("Step 2: Forward NTT transforms a, b into frequency domain.\n");
-    printf("Step 3: Point-wise multiplication of coefficients.\n");
-    printf("Step 4: Inverse NTT transform back to time domain.\n\n");
+    printf("Step 1: Pad input polynomials to power-of-2 size N >= 2n-1.\n");
+    printf("Step 2: Transform polynomials a and b into the frequency domain (Forward NTT).\n");
+    printf("Step 3: Perform point-wise multiplication of the transformed coefficients.\n");
+    printf("Step 4: Transform result back to the time domain (Inverse NTT) and scale by N^-1.\n\n");
 
     if (poly_load("A", a, n) != 0) return 1;
     if (poly_load("A", b, n) != 0) return 1;

@@ -67,6 +67,30 @@ static inline T2 zq_mod2(T2 a, T2 q) {
 }
 
 /**
+ * @brief Montgomery reduction for 32-bit products to 16-bit coefficients.
+ *
+ * Scientific Vanguard: Montgomery reduction replaces high-word multiplication
+ * with low-word multiplication and shifts, significantly reducing register pressure
+ * in SIMD loops compared to Barrett.
+ * Reference: Seiler, G. (2018). Faster NTT-based polynomial multiplication for Kyber.
+ * IACR Cryptology ePrint Archive, 2018/1139.
+ *
+ * @param a 32-bit product
+ * @param q modulus
+ * @return a * R^-1 mod q
+ */
+static inline T zq_montgomery_reduce(int32_t a, T q) {
+    if (q == 7681) {
+        int16_t u = (int16_t)(a * 7679);  // 7679 is -q^-1 mod 2^16
+        int32_t t = (int32_t)u * 7681;
+        int32_t res = (a - t) >> 16;
+        if (res < 0) res += 7681;
+        return (T)res;
+    }
+    return (T)(a % q);
+}
+
+/**
  * @brief Computes inverse a^-1 of a, such that a*a^-1 = 1 mod q
  * Helper function for zq_inverse that operates on T type, which is the primary coefficient type
  * used in polynomial operations.

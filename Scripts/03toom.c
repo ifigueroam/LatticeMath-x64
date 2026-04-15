@@ -94,10 +94,16 @@ int main(void) {
     T a[n] ALIGN_MEM, b[n] ALIGN_MEM;
     T c[2 * n - 1] ALIGN_MEM;
 
-    printf("--- Toom-3 Multiplication Test (Linear, n=9) ---\n");
+    printf("--- Toom-3 Multiplication Test ---\n");
+    printf("Method: O(n^1.46) Evaluation-Interpolation strategy.\n");
+    printf("Step 1: Pad input polynomials to a multiple of 3 (n=9) for synchronization.\n");
+    printf("Step 2: Evaluate polynomials at 5 points {0, 1, -1, -2, inf}.\n");
+    printf("Step 3: Perform point-wise multiplication of the evaluated results.\n");
+    printf("Step 4: Interpolate via matrix inversion to recover the final coefficients.\n\n");
+
     memset(a, 0, n * sizeof(T));
     memset(b, 0, n * sizeof(T));
-    if (poly_load("A", a, 8) != 0) return 1;  // Load your 8 coeffs into 9 spots
+    if (poly_load("A", a, 8) != 0) return 1;
     if (poly_load("A", b, 8) != 0) return 1;
 
     poly_print("a", a, n);
@@ -107,7 +113,7 @@ int main(void) {
     polymul_toom3(c, a, b, n, q);
 
     poly_print("c (full)", c, 2 * n - 1);
-    printf("------------------------------------------------\n");
+    printf("----------------------------------\n");
 
     return 0;
 }
