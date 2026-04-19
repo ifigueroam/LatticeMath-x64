@@ -1,5 +1,5 @@
 /**
- * @file 05benchmark.c
+ * @file 00-benchmark.c
  * @brief High-performance benchmarking for LatticeMath-x64.
  * Evaluates O(n^2), O(n^1.58), O(n^1.46), and O(n log n) algorithms.
  */
@@ -14,6 +14,7 @@
 // Internal Prototypes
 void polymul_schoolbook_parallel(T* c, const T* a, size_t n, const T* b, T q);
 void toom3_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q);
+void winograd_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q);
 void run_bench(size_t n, T q, int num_threads);
 
 // External Algorithm Prototypes
@@ -21,6 +22,7 @@ void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* re
                                  size_t threshold);
 void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q);
 int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q);
+void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q);
 
 void polymul_schoolbook_parallel(T* c, const T* a, size_t n, const T* b, T q) {
     size_t i, j;
@@ -55,6 +57,10 @@ void toom3_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q) {
     free(c_p);
 }
 
+void winograd_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q) {
+    polymul_winograd(c, a, n, b, n, q);
+}
+
 void run_bench(size_t n, T q, int num_threads) {
     T *a, *b, *c;
     posix_memalign((void**)&a, 32, n * sizeof(T));
@@ -84,6 +90,10 @@ void run_bench(size_t n, T q, int num_threads) {
     printf(" %13.2f |", (double)(get_time_ns() - start) / 1000.0);
 
     start = get_time_ns();
+    winograd_bench_wrapper(c, a, b, n, q);
+    printf(" %13.2f |", (double)(get_time_ns() - start) / 1000.0);
+
+    start = get_time_ns();
     polymul_ntt(c, a, b, n, q);
     printf(" %11.2f |\n", (double)(get_time_ns() - start) / 1000.0);
 
@@ -97,12 +107,18 @@ int main(void) {
     T q = 7681;
     int max_threads = omp_get_max_threads();
     printf("# LatticeMath-x64 Performance Benchmark (q=%d)\n\n", q);
-    printf("|  n   | Cores | Schoolbook (us) | Karatsuba (us) | Toom-3 (us)   |  NTT (us)   |\n");
-    printf("|:----:|:-----:|:---------------:|:--------------:|:-------------:|:-----------:|\n");
+    printf(
+        "|  n   | Cores | Schoolbook (us) | Karatsuba (us) | Toom-3 (us)   | Winograd (us) |  NTT (us)  "
+        " |\n");
+    printf(
+        "|:----:|:-----:|:---------------:|:--------------:|:-------------:|:-------------:|:-----------"
+        ":|\n");
     for (int i = 0; i < 4; i++) {
         run_bench(sizes[i], q, 1);
         if (max_threads > 1) run_bench(sizes[i], q, max_threads);
-        printf("|------|-------|-----------------|----------------|---------------|-------------|\n");
+        printf(
+            "|------|-------|-----------------|----------------|---------------|---------------|--------"
+            "-----|\n");
     }
     return 0;
 }

@@ -1,5 +1,5 @@
 /**
- * @file 01schoolbook.c
+ * @file 01-schoolbook.c
  * @brief Section 2.2.1: Schoolbook multiplication (Optimized)
  */
 #include <stdint.h>

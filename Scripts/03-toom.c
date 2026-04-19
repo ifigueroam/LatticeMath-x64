@@ -1,5 +1,5 @@
 /**
- * @file 03toom.c
+ * @file 03-toom.c
  * @brief Section 2.2.3: Toom--Cook multiplication (Synchronized to n=9 padding)
  */
 #include <stdint.h>

@@ -1,5 +1,5 @@
 /**
- * @file 04ntt.c
+ * @file 04-ntt.c
  * @brief Section 2.2.4: Number-theoretic transform (Mathematically Correct Iterative NTT)
  */
 #include <stdint.h>

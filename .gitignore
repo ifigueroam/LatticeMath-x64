@@ -11,3 +11,6 @@ input_config.tmp
 # Python artifacts
 __pycache__/
 *.pyc
+
+# Research and Scaffolding
+Research/

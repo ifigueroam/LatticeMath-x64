@@ -257,4 +257,17 @@ void polymul_negacyclic_ntt_forward_reference(T* t, const T* a, T q, T n, T root
  * @param root 2n-th root of unity
  */
 void polymul_negacyclic_ntt_inverse_reference(T* t, const T* a, T q, T n, T root);
+
+/**
+ * @brief Performs 2-D Winograd-based polynomial multiplication (F(3x3, 3x3)).
+ *
+ * @param c result polynomial
+ * @param a first multiplicand polynomial
+ * @param aN number of coefficients in a
+ * @param b second multiplicand polynomial
+ * @param bN number of coefficients in b
+ * @param q modulus
+ */
+void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q);
+
 #endif

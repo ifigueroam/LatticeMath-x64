@@ -1,5 +1,5 @@
 /**
- * @file 02karatsuba.c
+ * @file 02-karatsuba.c
  * @brief Section 2.2.2: Karatsuba multiplication
  */
 #include <stddef.h>
