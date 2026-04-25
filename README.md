@@ -20,7 +20,7 @@ LatticeMath-x64/
 │   └── api.h     # Opaque Poly structure and developer interface
 ├── CoreLib/      # System Infrastructure (Cache & Memory Tier)
 │   ├── poly.c    # Global Scratchpad Arena (Eliminates stack/heap latency)
-│   └── poly_api.c# posix_memalign management (HW alignment enforcement)
+│   └── poly_api.c # posix_memalign management (HW alignment enforcement)
 ├── Scripts/      # Standardized Algorithm Suite (Algorithmic Tier)
 │   ├── 00-benchmark.c   # Iterative statistical grid with RDTSC cycle counting
 │   ├── 01-schoolbook.c  # O(n^2) Cache-tiled baseline with Lazy Reduction
@@ -32,7 +32,6 @@ LatticeMath-x64/
 │   ├── DEVLOG.md    # Technical development milestones and discovery
 │   └── TRACKLOG.md  # Detailed historical timeline and visual evolution
 ├── Testing/      # Compiled Standalone Performance Binaries
-├── Research/     # Scientific Audit Corpus (Internal)
 └── input_config  # Custom polynomial test vector storage
 ```
 
