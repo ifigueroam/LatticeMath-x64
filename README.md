@@ -32,6 +32,7 @@ LatticeMath-x64/
 │   ├── DEVLOG.md    # Technical development milestones and discovery
 │   └── TRACKLOG.md  # Detailed historical timeline and visual evolution
 ├── Testing/      # Compiled Standalone Performance Binaries
+├── Research/     # Scientific Audit Corpus (Internal)
 └── input_config  # Custom polynomial test vector storage
 ```
 

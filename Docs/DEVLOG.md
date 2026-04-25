@@ -7,6 +7,39 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
 
 ---
 
+## [2026-04-25] Implementation: Research Corpus Restoration & Integrity Finalization
+### ANALYSIS AND DISCOVERY
+- **Identify Problem:** The `Research/` folder, containing the critical scientific audit 
+  trail and mathematical proofs of the framework, was accidentally removed from the 
+  active repository during a previous cleanup phase.
+- **Root Cause:** Over-aggressive optimization of the repository's storage footprint 
+  and a misconfiguration in the `.gitignore` policy that initially treated the 
+  research corpus as transient documentation.
+- **Constraint:** The project's "Surviving Pillars" architecture requires a permanent, 
+  immutable link between implementation and scientific research to satisfy PQC audit 
+  standards.
+- **Impact:** Loss of the internal research corpus would degrade the library's 
+  transparency and prevent future developers from verifying the mathematical 
+  precision of the complex-domain FFT and Toom-4 interpolation logic.
+- **Solution Propose:** Full restoration of the `Research/` directory from historical 
+  backups and updating the repository's configuration to ensure its permanent retention.
+- **Mechanism:** Utilizing `git` restoration protocols and refining `.gitignore` to 
+  explicitly whitelist the `.md` files within the `Research/` hierarchy.
+
+### TECHNICAL SOLUTION
+- **Goal/Objective:** Re-establish the project's Scientific Audit Trail.
+- **Phase Related:** Phase 17 (Scientific Integrity Restoration).
+- **Reasoning:** A cryptographic library without its corresponding proofs and 
+  thinking blocks is incomplete. Restoring the research folder ensures that every 
+  optimization (AVX2, Montgomery, FMA3) remains grounded in formal analysis.
+- **Implementation Details:** Restored `RESEARCH.md`, `APPLYRESEARCH.md`, and the 
+  `LocalPaper/` and `HarvestPaper/` subdirectories. Updated `.gitignore` to prevent 
+  accidental future deletions.
+- **Result:** Successfully restored 100% of the scientific corpus. All links in 
+  `README.md` and `Docs/TRACKLOG.md` are now valid.
+
+---
+
 ## [2026-04-25] Research: Architectural Pruning & Evolutionary Phase Analysis
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** The documentation footprint (specifically in the active architectural 

@@ -13,28 +13,31 @@ into a production-grade, hardware-optimized library for Post-Quantum Cryptograph
       |
       +--- [2026-03-28] Fork & Consolidation (CypherEngine)
       |      |
-      |      +--- [Phase 1] Arithmetic Tier (Barrett Reduction)
-      |      +--- [Phase 2] Algorithmic Tier (Cooley-Tukey NTT)
-      |      +--- [Phase 3] Hardware Tier (AVX2 SIMD Vectorization)
-      |      +--- [Phase 4] Cache Tier (Global Arena Memory)
+      |      +--- [Phase 1] Arithmetic Tier (Barrett Reduction Bedrock)
+      |
+      +--- [2026-03-29] Hardware & Cache Acceleration
+      |      |
+      |      +--- [Phase 2] Hardware Tier (AVX2 SIMD Vectorization)
+      |      +--- [Phase 3] Cache Tier (Static Scratchpad Arena)
       |
       +--- [2026-04-11] Architecture Registry & Rebranding (LatticeMath-x64)
       |      |
-      |      +--- [Phase 5] API Tier (Opaque Structs & Config Loader)
-      |      +--- [Milestone] Multi-Core Grid (OpenMP Integration)
+      |      +--- [Phase 4] API Tier & Multi-Core Engineering (OpenMP)
       |
-      +--- [2026-04-24] Stability, Research & Scientific Mapping
+      +--- [2026-04-14] Scientific Alignment & PQC Transition
       |      |
-      |      +--- [Phase 6] PQC Alignment (Montgomery & GS/CT Duality)
-      |      +--- [Milestone] Stability Audit (NTT Mathematical Fix)
-      |      +--- [Milestone] Monomial CRT Research (n=1024 Bottleneck)
+      |      +--- [Phase 5] PQC Scientific Alignment (Montgomery Arithmetic)
       |
-      +--- [2026-04-25] Hardware-Aware Acceleration (Current State)
+      +--- [2026-04-24] Accelerator Integration & Domain Mapping
+      |      |
+      |      +--- [Phase 6] Winograd Accelerator Tier (2-D Domain Transform)
+      |      +--- [Phase 7] High-Performance Non-NTT Kernels (Bodrato Strategy)
+      |
+      +--- [2026-04-25] High-Performance Standards (Current State)
              |
-             +--- [Phase 7] 2-D Winograd Accelerator (F(3x3, 3x3))
-             +--- [Phase 9] Optimized Toom-Cook-3 Implementation
-             +--- [Phase 11] Recursive Toom-Cook-4 Deployment
-             +--- [Phase 12] Isolated SIMD Toom-4 (Strict Math Core)
+             +--- [Phase 8] True Definitive Roadmap (Hybrid SIMD Lazy Toom-4)
+             +--- [Phase 9] High-Performance FFT (Complex Domain Integration)
+             +--- [Phase 10] Robust Benchmarking Suite (Statistical Professionalization)
 ```
 
 ---
