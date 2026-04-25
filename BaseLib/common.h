@@ -23,6 +23,19 @@
 #endif
 
 /**
+ * @brief Returns current CPU cycle count using RDTSC for cycle-accurate benchmarking.
+ */
+static inline uint64_t rdtsc(void) {
+#if defined(__x86_64__) || defined(_M_X64)
+    unsigned int lo, hi;
+    __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
+    return ((uint64_t)hi << 32) | lo;
+#else
+    return 0;  // Fallback for non-x86 architectures
+#endif
+}
+
+/**
  * @brief Returns current time in nanoseconds for high-precision benchmarking.
  */
 static inline uint64_t get_time_ns(void) {

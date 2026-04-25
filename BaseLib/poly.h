@@ -137,6 +137,18 @@ void poly_release_workspace(size_t size);
 void poly_reset_workspace(void);
 
 /**
+ * @brief Returns the current workspace pointer position as a mark.
+ * @return size_t current workspace pointer
+ */
+size_t poly_workspace_get_mark(void);
+
+/**
+ * @brief Restores the workspace pointer to a previously saved mark.
+ * @param mark workspace pointer position to restore
+ */
+void poly_workspace_set_mark(size_t mark);
+
+/**
  * @brief Compares two polynomials mod Q.
  * Helper function for poly_compare to perform coefficient-wise comparison of two polynomials a and b,
  * returning 0 if all coefficients are equal modulo q, and 1 if any coefficient differs.
@@ -257,6 +269,9 @@ void polymul_negacyclic_ntt_forward_reference(T* t, const T* a, T q, T n, T root
  * @param root 2n-th root of unity
  */
 void polymul_negacyclic_ntt_inverse_reference(T* t, const T* a, T q, T n, T root);
+
+void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q,
+                                 size_t threshold);
 
 /**
  * @brief Performs 2-D Winograd-based polynomial multiplication (F(3x3, 3x3)).

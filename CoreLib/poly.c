@@ -88,12 +88,14 @@ void poly_polymul_ref(T* restrict c, const T* restrict a, size_t aN, const T* re
     }
 }
 
-#define WORKSPACE_SIZE 16384
+// Phase 4 & 7: Global Scratchpad Arena
+// Increased size to accommodate recursive Toom-Cook-3 at n=1024
+#define WORKSPACE_SIZE 65536
 static T global_workspace[WORKSPACE_SIZE] ALIGN_MEM;
 static size_t workspace_ptr = 0;
 
 T* poly_get_workspace(size_t size) {
-    // Phase 4: Ensure alignment for Phase 3 SIMD (32-byte / 16 coefficients)
+    // Ensure 32-byte alignment (16 uint16_t elements) for SIMD safety
     size_t aligned_size = (size + 15) & ~15;
     if (workspace_ptr + aligned_size > WORKSPACE_SIZE) {
         fprintf(stderr, "FATAL: Workspace overflow!\n");
@@ -114,9 +116,18 @@ void poly_release_workspace(size_t size) {
 
 void poly_reset_workspace(void) { workspace_ptr = 0; }
 
+size_t poly_workspace_get_mark(void) { return workspace_ptr; }
+
+void poly_workspace_set_mark(size_t mark) {
+    if (mark > WORKSPACE_SIZE)
+        workspace_ptr = WORKSPACE_SIZE;
+    else
+        workspace_ptr = mark;
+}
+
 /**
  * @brief Samples a uniformly random polynomial with coefficients in [0, q).
-...
+ *
  * Hardware-Aware: Samples entropy in a single batch to minimize system
  * call overhead. Uses rejection sampling for modulus consistency.
  *

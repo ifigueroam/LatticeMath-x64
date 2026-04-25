@@ -1,7 +1,9 @@
 /**
  * @file 00-benchmark.c
- * @brief High-performance benchmarking for LatticeMath-x64.
- * Evaluates O(n^2), O(n^1.58), O(n^1.46), and O(n log n) algorithms.
+ * @brief Phase 15: Robust Benchmarking Suite (Statistical Professionalization)
+ *
+ * Methodology: Median of 1000 iterations with 10 warm-up passes.
+ * Metric: CPU Kilocycles (kCyc) - Frequency Independent.
  */
 #include <omp.h>
 #include <stdio.h>
@@ -11,11 +13,8 @@
 #include "poly.h"
 #include "zq.h"
 
-// Internal Prototypes
-void polymul_schoolbook_parallel(T* c, const T* a, size_t n, const T* b, T q);
-void toom3_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q);
-void winograd_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q);
-void run_bench(size_t n, T q, int num_threads);
+#define ITERATIONS 1000
+#define WARMUP 10
 
 // External Algorithm Prototypes
 void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q,
@@ -24,24 +23,20 @@ void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size
 int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q);
 void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q);
 
-void polymul_schoolbook_parallel(T* c, const T* a, size_t n, const T* b, T q) {
-    size_t i, j;
-    uint32_t* c32 = calloc(2 * n - 1, sizeof(uint32_t));
-#pragma omp parallel for private(j) schedule(dynamic)
-    for (i = 0; i < n; i++) {
-        uint32_t ai = (uint32_t)a[i];
-        for (j = 0; j < n; j++) {
-            uint32_t prod = ai * (uint32_t)b[j];
-#pragma omp atomic
-            c32[i + j] += prod;
-        }
-    }
-    for (i = 0; i < 2 * n - 1; i++) c[i] = zq_mod(c32[i], q);
-    free(c32);
+// Function wrappers for iterative benchmarking
+typedef void (*mul_func)(T*, const T*, const T*, size_t, T);
+
+// Comparison function for qsort to find the median
+static int compare_u64(const void* a, const void* b) {
+    uint64_t arg1 = *(const uint64_t*)a;
+    uint64_t arg2 = *(const uint64_t*)b;
+    if (arg1 < arg2) return -1;
+    if (arg1 > arg2) return 1;
+    return 0;
 }
 
-void toom3_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q) {
-    size_t n_padded = (n % 3 == 0) ? n : ((n / 3) + 1) * 3;
+static void toom4_bench_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
+    size_t n_padded = (n % 4 == 0) ? n : ((n / 4) + 1) * 4;
     T *a_p, *b_p, *c_p;
     posix_memalign((void**)&a_p, 32, n_padded * sizeof(T));
     posix_memalign((void**)&b_p, 32, n_padded * sizeof(T));
@@ -57,11 +52,47 @@ void toom3_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q) {
     free(c_p);
 }
 
-void winograd_bench_wrapper(T* c, const T* a, const T* b, size_t n, T q) {
+static void winograd_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
     polymul_winograd(c, a, n, b, n, q);
 }
 
-void run_bench(size_t n, T q, int num_threads) {
+static void ntt_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
+    polymul_ntt(c, a, b, n, q);
+}
+
+static void karatsuba_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
+    polymul_karatsuba_recursive(c, a, b, n, q, 32);
+}
+
+static void schoolbook_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
+    poly_polymul_ref(c, a, n, b, n, q);
+}
+
+/**
+ * @brief Measures the median CPU cycles of an algorithm.
+ */
+static uint64_t measure_median(mul_func func, T* c, const T* a, const T* b, size_t n, T q) {
+    uint64_t results[ITERATIONS];
+
+    // Cache Warming (Dummy Passes)
+    for (int i = 0; i < WARMUP; i++) {
+        poly_reset_workspace();
+        func(c, a, b, n, q);
+    }
+
+    // Timed Measurements
+    for (int i = 0; i < ITERATIONS; i++) {
+        poly_reset_workspace();
+        uint64_t start = rdtsc();
+        func(c, a, b, n, q);
+        results[i] = rdtsc() - start;
+    }
+
+    qsort(results, ITERATIONS, sizeof(uint64_t), compare_u64);
+    return results[ITERATIONS / 2];
+}
+
+static void run_bench(size_t n, T q, int num_threads) {
     T *a, *b, *c;
     posix_memalign((void**)&a, 32, n * sizeof(T));
     posix_memalign((void**)&b, 32, n * sizeof(T));
@@ -72,30 +103,23 @@ void run_bench(size_t n, T q, int num_threads) {
 
     printf("| %4zu | %5d |", n, num_threads);
 
-    uint64_t start = get_time_ns();
-    if (num_threads == 1)
-        poly_polymul_ref(c, a, n, b, n, q);
-    else
-        polymul_schoolbook_parallel(c, a, n, b, q);
-    printf(" %15.2f |", (double)(get_time_ns() - start) / 1000.0);
+    // Symmetric Alignment: 1 space + width + 1 space
+    uint64_t cyc;
 
-    poly_reset_workspace();
-    start = get_time_ns();
-    polymul_karatsuba_recursive(c, a, b, n, q, 32);
-    printf(" %14.2f |", (double)(get_time_ns() - start) / 1000.0);
+    cyc = measure_median(schoolbook_wrapper_internal, c, a, b, n, q);
+    printf(" %15.1f |", (double)cyc / 1000.0);
 
-    poly_reset_workspace();
-    start = get_time_ns();
-    toom3_bench_wrapper(c, a, b, n, q);
-    printf(" %13.2f |", (double)(get_time_ns() - start) / 1000.0);
+    cyc = measure_median(karatsuba_wrapper_internal, c, a, b, n, q);
+    printf(" %14.1f |", (double)cyc / 1000.0);
 
-    start = get_time_ns();
-    winograd_bench_wrapper(c, a, b, n, q);
-    printf(" %13.2f |", (double)(get_time_ns() - start) / 1000.0);
+    cyc = measure_median(toom4_bench_wrapper_internal, c, a, b, n, q);
+    printf(" %11.1f |", (double)cyc / 1000.0);
 
-    start = get_time_ns();
-    polymul_ntt(c, a, b, n, q);
-    printf(" %11.2f |\n", (double)(get_time_ns() - start) / 1000.0);
+    cyc = measure_median(ntt_wrapper_internal, c, a, b, n, q);
+    printf(" %8.1f |", (double)cyc / 1000.0);
+
+    cyc = measure_median(winograd_wrapper_internal, c, a, b, n, q);
+    printf(" %13.1f |\n", (double)cyc / 1000.0);
 
     free(a);
     free(b);
@@ -106,19 +130,24 @@ int main(void) {
     size_t sizes[] = {256, 512, 768, 1024};
     T q = 7681;
     int max_threads = omp_get_max_threads();
-    printf("# LatticeMath-x64 Performance Benchmark (q=%d)\n\n", q);
+
+    printf("# LatticeMath-x64 Robust Performance Benchmark (q=%d)\n", q);
+    printf("Methodology: Median of %d iterations with %d warm-up passes.\n", ITERATIONS, WARMUP);
+    printf("Metric: CPU Kilocycles (kCyc) - Frequency Independent.\n\n");
+
     printf(
-        "|  n   | Cores | Schoolbook (us) | Karatsuba (us) | Toom-3 (us)   | Winograd (us) |  NTT (us)  "
-        " |\n");
+        "|  n   | Cores | Schoolbook (kC) | Karatsuba (kC) | Toom-4 (kC) | NTT (kC) | Winograd (kC) "
+        "|\n");
     printf(
-        "|:----:|:-----:|:---------------:|:--------------:|:-------------:|:-------------:|:-----------"
-        ":|\n");
+        "|:----:|:-----:|:---------------:|:--------------:|:-----------:|:--------:|:-------------:|"
+        "\n");
+
     for (int i = 0; i < 4; i++) {
         run_bench(sizes[i], q, 1);
         if (max_threads > 1) run_bench(sizes[i], q, max_threads);
         printf(
-            "|------|-------|-----------------|----------------|---------------|---------------|--------"
-            "-----|\n");
+            "|------|-------|-----------------|----------------|-------------|----------|---------------"
+            "|\n");
     }
     return 0;
 }

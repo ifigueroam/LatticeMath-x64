@@ -13,9 +13,6 @@
 
 void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q,
                                  size_t threshold) {
-    size_t nhalf = n >> 1;
-    size_t i, j;
-
     if (n <= threshold) {
 // Scientific Vanguard: SIMD Word-Slicing for Base Cases
 // Edamatsu (2023) demonstrates that batching small multiplications across SIMD lanes
@@ -23,12 +20,12 @@ void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* re
 // of the base-case nested loops, allowing the compiler to generate optimal AVX2
 // batch operations for sizes like n=16 or n=32.
 #pragma omp simd
-        for (i = 0; i < 2 * n - 1; i++) c[i] = 0;
+        for (size_t i = 0; i < 2 * n - 1; i++) c[i] = 0;
 
-        for (i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
             T ai = a[i];
 #pragma omp simd
-            for (j = 0; j < n; j++) {
+            for (size_t j = 0; j < n; j++) {
                 T2 prod = (T2)ai * b[j];
                 c[i + j] = zq_mod((T2)c[i + j] + zq_mod(prod, q), q);
             }
@@ -36,6 +33,10 @@ void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* re
         return;
     }
 
+    // Save workspace state for scoped automatic release
+    size_t workspace_mark = poly_workspace_get_mark();
+
+    size_t nhalf = n >> 1;
     size_t tmp_size = 2 * (n - nhalf) - 1;
     T* tmp = poly_get_workspace(tmp_size);
     T* a0a1 = poly_get_workspace(nhalf);
@@ -50,7 +51,7 @@ void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* re
         poly_add_simd(a0a1, a0, a1, nhalf, q);
         poly_add_simd(b0b1, b0, b1, nhalf, q);
     } else {
-        for (i = 0; i < nhalf; i++) {
+        for (size_t i = 0; i < nhalf; i++) {
             a0a1[i] = zq_mod(a0[i] + a1[i], q);
             b0b1[i] = zq_mod(b0[i] + b1[i], q);
         }
@@ -61,17 +62,16 @@ void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* re
     polymul_karatsuba_recursive(&c[2 * nhalf], a1, b1, nhalf, q, threshold);
 
     c[2 * nhalf - 1] = 0;
-    for (i = 0; i < 2 * nhalf - 1; i++) {
+    for (size_t i = 0; i < 2 * nhalf - 1; i++) {
         tmp[i] = zq_mod(tmp[i] + q - c[i], q);
         tmp[i] = zq_mod(tmp[i] + q - c[2 * nhalf + i], q);
     }
-    for (i = 0; i < 2 * nhalf - 1; i++) {
+    for (size_t i = 0; i < 2 * nhalf - 1; i++) {
         c[i + nhalf] = zq_mod(c[i + nhalf] + tmp[i], q);
     }
 
-    poly_release_workspace(nhalf);
-    poly_release_workspace(nhalf);
-    poly_release_workspace(tmp_size);
+    // Scoped Release: Restores workspace pointer to original entry state
+    poly_workspace_set_mark(workspace_mark);
 }
 
 #ifndef BENCHMARK
