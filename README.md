@@ -111,8 +111,8 @@ Based on the latest benchmark run (q=7681, 1 Core baseline, **Median of 1000 ite
 | Schoolbook   | 8382.3        | O(n^2) Cache-Tiled            | Baseline                |
 | Karatsuba    | 2413.2        | O(n^1.58) SIMD Word-Sliced    | Recursive Acceleration  |
 | Toom-Cook-4  | 2080.0        | O(n^1.40) Hybrid AVX2 Lazy    | Algorithmic Leap        |
-| NTT (FFT)    | 976.2         | O(n log n) Complex Domain     | Algorithmic Peak        |
-| Monomial CRT | 1392.1        | O(n log n) 3x512 Good-Thomas  | Multi-Domain Peak       |
+| NTT (FFT)    | 790.5         | O(n log n) Complex Domain     | Algorithmic Peak        |
+| Monomial CRT | 793.7         | O(n log n) 3x512 Good-Thomas  | Multi-Domain Peak       |
 | Winograd (k) | 4.7           | O(n^1.58) Matrix Domain       | HW-Aware Accelerator   |
 
 ---
