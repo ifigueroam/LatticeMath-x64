@@ -46,70 +46,93 @@ implementations that successfully scaled to production-grade performance.
 ### Phase 1: Arithmetic Tier (Barrett Reduction Bedrock)
 - **Objective:** Eliminate high-latency `div` instructions (80-100 cycles) from modular arithmetic.
 - **Architectural Transition:** Moved from compiler-dependent modulo (`%`) to a multiplication-shift model.
+- **Mechanism:** Implemented Barrett reduction using precomputed 64-bit reciprocals and constant shifts.
+- **Rationale:** Integer division is the single greatest bottleneck in modular algebra; shifts are near-instant.
 - **Impact:** Achieved a ~15x reduction in modular reduction latency.
 
 ### Phase 2: Hardware Tier (AVX2 SIMD Vectorization)
 - **Objective:** Exploit sub-cycle parallelism via 256-bit YMM registers.
-- **Innovation:** Developed the **Unsigned Comparison XOR-trick** to circumvent AVX2 limitations.
+- **Architectural Transition:** Shifted from "Scalar Sequential" to "Vector Parallel" execution.
+- **Mechanism:** Developed the **Unsigned Comparison XOR-trick** using `_mm256` intrinsics.
+- **Rationale:** AVX2 lacks native 16-bit unsigned comparisons; XOR-offsets enable standard signed logic.
 - **Impact:** Processes 16 coefficients simultaneously per cycle; total $16 \times$ scaling.
 
 ### Phase 3: Cache Tier (Static Scratchpad Arena)
 - **Objective:** Address the "Memory Wall" by keeping data resident in L1/L2 CPU caches.
 - **Architectural Transition:** Shifted from "Dynamic" memory to a unified "Mark-based Restoration" arena.
+- **Mechanism:** Engineered a 32-byte aligned static memory pool with LIFO allocation logic.
+- **Rationale:** Recursive `malloc`/`free` calls cause cache thrashing and non-deterministic latency.
 - **Impact:** Verified 0% TLB misses during deep recursion; expanded capacity to 64KB for multi-threading.
 
 ### Phase 4: API Tier & Multi-Core Engineering (OpenMP)
 - **Objective:** Standardize the framework for professional integration and thread-level scaling.
+- **Architectural Transition:** Shifted from "Research Scripts" to "Production-Grade API."
 - **Mechanism:** Implemented opaque `Poly` objects and OpenMP fork-join loop optimization.
+- **Rationale:** Encapsulation and multi-core utilization are mandatory for modern cryptographic libraries.
+- **Impact:** Enabled linear scaling across 32+ logical cores.
 
 ### Phase 5: PQC Scientific Alignment (Montgomery Arithmetic)
 - **Objective:** Align with state-of-the-art primitives (Kyber/Dilithium) and reduce register pressure.
-- **Implementation:** Replaced Barrett multipliers with low-word Montgomery reduction kernels.
+- **Architectural Transition:** Transitioned from Barrett reduction to Montgomery reduction.
+- **Mechanism:** Replaced multi-word Barrett logic with low-word Montgomery reduction kernels.
+- **Rationale:** Montgomery reduction avoids high-word multiplications, freeing up YMM registers.
 - **Impact:** Achieved an additional 51% speedup in Schoolbook throughput.
 
 ### Phase 6: Winograd Accelerator Tier (2-D Domain Transform)
 - **Objective:** Alleviate matrix complexity of 1-D Winograd via 2-D matrix domain mapping.
+- **Architectural Transition:** Shifted from "Linear Convolution" to "2-D Matrix Domain Acceleration."
 - **Mechanism:** Implemented the $F(3 \times 3, 3 \times 3)$ kernel with a Division Elimination scaling trick.
+- **Rationale:** 2-D transforms reduce the number of multiplications faster than 1-D splits for small $N$.
 - **Impact:** Achieved ultra-low block latency (~2.5 us), providing a high-speed transitional engine.
 
 ### Phase 7: High-Performance Non-NTT Kernels (Bodrato Strategy)
 - **Objective:** Resolve the constant-factor bottleneck of Toom-Cook linear transformations.
+- **Architectural Transition:** Transitioned from "Naive Matrix" to "Optimal Addition Sequences."
 - **Mechanism:** Applied **Bodrato’s Optimal Addition Sequences** combined with **Lazy Interpolation**.
+- **Rationale:** Reducing the number of additions in the interpolation phase is critical for Toom-Cook.
 - **Impact:** Reclaimed theoretical superiority of Toom-Cook over Karatsuba for high-degree rings.
 
 ### Phase 8: True Definitive Roadmap (Hybrid SIMD Lazy Toom-4)
 - **Objective:** Maximize real-world throughput by uniting Genuine AVX2 processing and Hybrid Execution.
-- **Mechanism:** Rewrote interpolation using 32-bit accumulators over contiguous $n/4$ chunks to 
-  eliminate modular arithmetic overhead during the 7-point Toom-4 Vandermonde inversion.
+- **Architectural Transition:** Transitioned from "Strict Isolation" to "Hybrid Production Model."
+- **Mechanism:** Rewrote interpolation using 32-bit accumulators over contiguous $n/4$ chunks.
+- **Rationale:** 32-bit intermediate registers allow "Lazy Reduction," delaying modulo $q$ until the end.
 - **Impact:** Slashed latency for $n=1024$ to ~2080 kCyc, definitively outperforming Karatsuba.
 
 ### Phase 9: High-Performance FFT (Complex Domain Integration)
 - **Objective:** Overcome field constraints ($q=7681$) that cripple finite-field transforms at $n=1024$.
-- **Mechanism:** Abandoning the field $\mathbb{Z}_q$ for the complex field $\mathbb{C}$ using AVX2 FMA3.
-- **Scientific Design Rationale:** The continuous domain guarantees the existence of arbitrary-length roots 
-  of unity. IEEE-754 53-bit mantissas guarantee zero precision loss for the target parameter set.
+- **Architectural Transition:** Shifted from "Discrete Modulo Logic" to "Continuous Domain Math."
+- **Mechanism:** Abandoned the field $\mathbb{Z}_q$ for the complex field $\mathbb{C}$ using AVX2 FMA3.
+- **Rationale:** Complex numbers provide unconditional roots existence; FMA3 units offer superior throughput.
 - **Impact:** Achieved a $30\times$ speedup over previous NTTs, reaching ~1000 kCyc for $n=1024$.
 
 ### Phase 10: Robust Benchmarking Suite (Statistical Professionalization)
 - **Objective:** Establish a standardized, noise-resistant framework for performance evaluation.
-- **Mechanism:** Implementing **Iterative Benchmarking** (Median of 1000 runs) and **RDTSC Cycle Counting**.
+- **Architectural Transition:** Transitioned from "Diagnostic Timing" to "High-Fidelity Profiling."
+- **Mechanism:** Implemented **Iterative Benchmarking** (Median of 1000 runs) and **RDTSC Cycle Counting**.
+- **Rationale:** Cycle counting is frequency-independent; medians reject OS context-switch noise.
 - **Impact:** Provides high-fidelity telemetry, enabling scientific precision in optimization tracking.
 
 ### Phase 11: Monomial Factor CRT (Hybrid Multi-Domain)
 - **Objective:** Bypass the $q=7681$ primitive-root constraint for high-security rings ($n=1024$).
-- **Innovation:** Utilizes a lifting modulus $Q(x) = (x^{n_{main}} - 1)x^{n_{low}}$ to decouple the product.
+- **Architectural Transition:** Shifted from "Single-Domain" to "Multi-Domain" multiplication routing.
+- **Mechanism:** Utilizes a lifting modulus $Q(x) = (x^{n_{main}} - 1)x^{n_{low}}$ and Ruritanian permutations.
+- **Rationale:** Coprime moduli allow decoupling the product into domains where NTT roots exist.
 - **Impact:** Reclaims prime-field NTT speed for $n=1024$ without floating-point precision risks.
 
 ### Phase 12: Stage 3 Hardware Alignment (Instruction-Level Pruning)
 - **Objective:** Exploit 256-bit wide ALU pipelines and relieve the modular multiplier bottleneck.
-- **Mechanism:** Implemented block-wise SIMD pruning and Crude Barrett arithmetic (shift-based reduction).
+- **Architectural Transition:** Shifted from "Element-Wise Pruning" to "Instruction-Level Hardware Alignment."
+- **Mechanism:** Implemented block-wise SIMD pruning (`_mm256_testz_si256`) and Crude Barrett arithmetic.
+- **Rationale:** Vectorized zero-skipping reduces branch pressure; shifts replace high-latency multiplications.
 - **Impact:** Reduced constant-factor overhead, achieving sub-700 kCyc latency for $n=1024$.
 
 ### Phase 13: Stage 4 Matrix Supremacy (2D Incomplete Transforms)
 - **Objective:** Maximize data-movement efficiency and algorithmic depth reduction.
-- **Innovation:** Transitioned to 2D Good-Thomas Matrix transforms with "Early-Stop" incomplete blocks.
-- **Impact:** Achieved record-breaking **314.1 kCyc** for $n=1024$, definitively establishing the Monomial 
-  CRT as the supreme performance standard in the framework.
+- **Architectural Transition:** Shifted from "Generalized 1D NTT" to "Specialized 2D Incomplete Matrix Transform."
+- **Mechanism:** Transitioned to 2D Good-Thomas Matrix transforms with "Early-Stop" incomplete blocks.
+- **Rationale:** 2D decomposition minimizes permutation frequency; incomplete transforms reduce arithmetic depth.
+- **Impact:** Achieved record-breaking **314.1 kCyc** for $n=1024$, establishing the Monomial CRT as the supreme standard.
 
 ---
 
