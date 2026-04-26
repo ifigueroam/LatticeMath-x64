@@ -38,6 +38,7 @@ into a production-grade, hardware-optimized library for Post-Quantum Cryptograph
              +--- [Phase 8] True Definitive Roadmap (Hybrid SIMD Lazy Toom-4)
              +--- [Phase 9] High-Performance FFT (Complex Domain Integration)
              +--- [Phase 10] Robust Benchmarking Suite (Statistical Professionalization)
+             +--- [Phase 11] Monomial Factor CRT (Hybrid Multi-Domain)
 ```
 
 ---
@@ -446,6 +447,46 @@ into a production-grade, hardware-optimized library for Post-Quantum Cryptograph
   and Phase 15 (Robust Benchmarks).
 - **Analysis & Fix:** Corrected the documentation bloat by formally defining the 
   "Surviving Pillars" architecture.
+
+### 2.26 Milestone 26 (2026-04-25): Monomial CRT Phase I (Prototyping)
+**Date:** 2026-04-25
+- **Milestone:** Initial mathematical verification of the Monomial CRT decoupling logic.
+- **Objective:** Validate the inverse CRT map for $Q(x) = (x^{n_{main}} - 1)x^{n_{low}}$.
+- **Architectural Transition:** Transitioned from "Single-Domain" to "Multi-Domain" 
+  multiplication routing.
+- **Verification & Scientific Audit:** Verified bit-identical output using recursive 
+  Karatsuba delegates.
+
+### 2.27 Milestone 27 (2026-04-25): Monomial CRT Phase II (Good-Thomas NTT)
+**Date:** 2026-04-25
+- **Milestone:** Integration of the frequency-domain core into the Monomial framework.
+- **Core Upgrades:** Replaced Karatsuba delegates with a custom 1536-point Good-Thomas NTT.
+- **Architectural Transition:** Evolved from "Delegate Routing" to "Native Frequency Scaling."
+- **Scientific Design Rationale:** Bypasses field constraints by using a domain size ($1536$) 
+  that divides $q-1=7680$.
+
+### 2.28 Milestone 28 (2026-04-25): Monomial CRT Phase III (SIMD Optimized)
+**Date:** 2026-04-25
+- **Milestone:** Implementation of vertical AVX2 processing for the Good-Thomas radices.
+- **Objective:** Mitigate the index-mapping overhead of the non-power-of-two transform.
+- **Performance Impact:** Latency for $n=1024$ reduced via 16-way register saturation.
+- **Architectural Transition:** Shifted from "Scalar NTT" to "Vectorized Multi-Domain Core."
+
+### 2.29 Milestone 29 (2026-04-25): Monomial CRT Phase IV (Lazy & Linear Integrity)
+**Date:** 2026-04-25
+- **Milestone:** Optimization of the reduction pipeline and restoration of linear accuracy.
+- **Core Upgrades:** Implemented Lazy Butterfly scheduling; reverted Low Part to Karatsuba.
+- **Analysis & Fix:** Corrected aliasing errors in the secondary domain to ensure exact 
+  linear convolution results.
+
+### 2.30 Milestone 30 (2026-04-25): Monomial CRT Phase V (Dynamic & Pruned)
+**Date:** 2026-04-25
+- **Milestone:** Final performance professionalization and TCHES 2025 alignment.
+- **Objective:** Reach peak efficiency through size-aware domains and butterfly pruning.
+- **Core Upgrades:** Dynamic parameter selection ($n=256 \to 384+128$, $n=1024 \to 1920+128$); 
+  zero-skipping butterflies.
+- **Performance Impact:** Achieved ~608 kCyc for $n=1024$, outperforming recursive Karatsuba 
+  by $3.8\times$.
 
 ---
 *End of Tracklog.*

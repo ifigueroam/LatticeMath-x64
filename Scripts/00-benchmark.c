@@ -22,6 +22,7 @@ void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* re
 void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q);
 int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q);
 void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q);
+void polymul_monomial_crt(T* c, const T* a, const T* b, size_t n, T q);
 
 // Function wrappers for iterative benchmarking
 typedef void (*mul_func)(T*, const T*, const T*, size_t, T);
@@ -54,6 +55,10 @@ static void toom4_bench_wrapper_internal(T* c, const T* a, const T* b, size_t n,
 
 static void winograd_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
     polymul_winograd(c, a, n, b, n, q);
+}
+
+static void monomial_crt_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
+    polymul_monomial_crt(c, a, b, n, q);
 }
 
 static void ntt_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
@@ -119,7 +124,10 @@ static void run_bench(size_t n, T q, int num_threads) {
     printf(" %8.1f |", (double)cyc / 1000.0);
 
     cyc = measure_median(winograd_wrapper_internal, c, a, b, n, q);
-    printf(" %13.1f |\n", (double)cyc / 1000.0);
+    printf(" %13.1f |", (double)cyc / 1000.0);
+
+    cyc = measure_median(monomial_crt_wrapper_internal, c, a, b, n, q);
+    printf(" %14.1f |\n", (double)cyc / 1000.0);
 
     free(a);
     free(b);
@@ -136,10 +144,12 @@ int main(void) {
     printf("Metric: CPU Kilocycles (kCyc) - Frequency Independent.\n\n");
 
     printf(
-        "|  n   | Cores | Schoolbook (kC) | Karatsuba (kC) | Toom-4 (kC) | NTT (kC) | Winograd (kC) "
+        "|  n   | Cores | Schoolbook (kC) | Karatsuba (kC) | Toom-4 (kC) | NTT (kC) | Winograd (kC) | "
+        "Monomial (kC) "
         "|\n");
     printf(
-        "|:----:|:-----:|:---------------:|:--------------:|:-----------:|:--------:|:-------------:|"
+        "|:----:|:-----:|:---------------:|:--------------:|:-----------:|:--------:|:-------------:|:--"
+        "------------:|"
         "\n");
 
     for (int i = 0; i < 4; i++) {
@@ -147,6 +157,7 @@ int main(void) {
         if (max_threads > 1) run_bench(sizes[i], q, max_threads);
         printf(
             "|------|-------|-----------------|----------------|-------------|----------|---------------"
+            "|----------------"
             "|\n");
     }
     return 0;

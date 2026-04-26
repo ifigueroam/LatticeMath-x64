@@ -57,7 +57,7 @@ int main(void) {
     printf("Step 3: Perform final modular reduction into the result array.\n\n");
 
     if (poly_load("A", a, n) != 0) return 1;
-    if (poly_load("A", b, n) != 0) return 1;
+    if (poly_load("B", b, n) != 0) return 1;
 
     poly_print("a", a, n);
     poly_print("b", b, n);

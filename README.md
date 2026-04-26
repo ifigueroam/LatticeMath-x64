@@ -95,6 +95,11 @@ implementations that successfully scaled to production-grade performance.
 - **Mechanism:** Implementing **Iterative Benchmarking** (Median of 1000 runs) and **RDTSC Cycle Counting**.
 - **Impact:** Provides high-fidelity telemetry, enabling scientific precision in optimization tracking.
 
+### Phase 11: Monomial Factor CRT (Hybrid Multi-Domain)
+- **Objective:** Bypass the $q=7681$ primitive-root constraint for high-security rings ($n=1024$).
+- **Innovation:** Utilizes a lifting modulus $Q(x) = (x^{n_{main}} - 1)x^{n_{low}}$ to decouple the product.
+- **Impact:** Reclaims prime-field NTT speed for $n=1024$ without floating-point precision risks.
+
 ---
 
 ## Performance Analysis & Hardware Telemetry (n=1024)
@@ -106,7 +111,8 @@ Based on the latest benchmark run (q=7681, 1 Core baseline, **Median of 1000 ite
 | Schoolbook   | 8382.3        | O(n^2) Cache-Tiled            | Baseline                |
 | Karatsuba    | 2413.2        | O(n^1.58) SIMD Word-Sliced    | Recursive Acceleration  |
 | Toom-Cook-4  | 2080.0        | O(n^1.40) Hybrid AVX2 Lazy    | Algorithmic Leap        |
-| NTT (FFT)    | 1013.0        | O(n log n) Complex Domain     | Algorithmic Peak        |
+| NTT (FFT)    | 976.2         | O(n log n) Complex Domain     | Algorithmic Peak        |
+| Monomial CRT | 1392.1        | O(n log n) 3x512 Good-Thomas  | Multi-Domain Peak       |
 | Winograd (k) | 4.7           | O(n^1.58) Matrix Domain       | HW-Aware Accelerator   |
 
 ---

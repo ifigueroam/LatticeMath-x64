@@ -290,7 +290,9 @@ void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size
 int main(void) {
     size_t n = 8;
     T q = 7681;
-    T a[8], b[8], c[15];
+    T a[8] ALIGN_MEM, b[8] ALIGN_MEM;
+    T c[15] ALIGN_MEM;
+
     printf("--- Toom-4 Definitive Roadmap (Hybrid SIMD) ---\n");
     printf("Method: O(n^1.40) 4-way Split with SIMD Lazy Interpolation.\n");
     printf("Step 1: Split a and b into 4 segments (k=4).\n");
@@ -298,11 +300,19 @@ int main(void) {
     printf("Step 3: Perform 7 recursive sub-multiplications (Hybrid Fallback to Karatsuba).\n");
     printf("Step 4: Interpolate coefficients via 7-point Vandermonde Inversion (32-bit Lazy SIMD).\n");
     printf("Step 5: Reconstruct the final product using Overlap-Add.\n\n");
+
     if (poly_load("A", a, n) != 0) return 1;
-    if (poly_load("A", b, n) != 0) return 1;
+    if (poly_load("B", b, n) != 0) return 1;
+
+    poly_print("a", a, n);
+    poly_print("b", b, n);
+
     poly_reset_workspace();
     polymul_toom3(c, a, b, n, q);
+
     poly_print("c", c, 15);
+    printf("-----------------------------------------------\n");
+
     return 0;
 }
 #endif

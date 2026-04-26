@@ -126,7 +126,7 @@ int main(void) {
     printf("Step 5: Scale by 1/N, round, and apply modulo q to recover exact integers.\n\n");
 
     if (poly_load("A", a, n) != 0) return 1;
-    if (poly_load("A", b, n) != 0) return 1;
+    if (poly_load("B", b, n) != 0) return 1;
 
     poly_print("a", a, n);
     poly_print("b", b, n);
