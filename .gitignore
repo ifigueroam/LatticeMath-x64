@@ -1,5 +1,5 @@
 # Project Configuration
-# GEMINI.md
+ GEMINI.md
 
 # Compiled Binaries
 Testing/test_*
@@ -13,4 +13,4 @@ __pycache__/
 *.pyc
 
 # Research and Scaffolding
-# Research/
+ Research/

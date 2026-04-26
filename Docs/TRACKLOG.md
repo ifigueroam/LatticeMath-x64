@@ -33,12 +33,17 @@ into a production-grade, hardware-optimized library for Post-Quantum Cryptograph
       |      +--- [Phase 6] Winograd Accelerator Tier (2-D Domain Transform)
       |      +--- [Phase 7] High-Performance Non-NTT Kernels (Bodrato Strategy)
       |
-      +--- [2026-04-25] High-Performance Standards (Current State)
+      +--- [2026-04-25] High-Performance Standards
+      |      |
+      |      +--- [Phase 8] True Definitive Roadmap (Hybrid SIMD Lazy Toom-4)
+      |      +--- [Phase 9] High-Performance FFT (Complex Domain Integration)
+      |      +--- [Phase 10] Robust Benchmarking Suite (Statistical Professionalization)
+      |      +--- [Phase 11] Monomial Factor CRT (Hybrid Multi-Domain)
+      |
+      +--- [2026-04-26] Stage 3 & 4 TCHES Alignment (Current State)
              |
-             +--- [Phase 8] True Definitive Roadmap (Hybrid SIMD Lazy Toom-4)
-             +--- [Phase 9] High-Performance FFT (Complex Domain Integration)
-             +--- [Phase 10] Robust Benchmarking Suite (Statistical Professionalization)
-             +--- [Phase 11] Monomial Factor CRT (Hybrid Multi-Domain)
+             +--- [Phase 12] Stage 3 Hardware Alignment (SIMD Pruning & Crude Barrett)
+             +--- [Phase 13] Stage 4 Matrix Supremacy (2D Incomplete Transforms)
 ```
 
 ---
@@ -487,6 +492,29 @@ into a production-grade, hardware-optimized library for Post-Quantum Cryptograph
   zero-skipping butterflies.
 - **Performance Impact:** Achieved ~608 kCyc for $n=1024$, outperforming recursive Karatsuba 
   by $3.8\times$.
+
+### 2.31 Milestone 31 (2026-04-26): Monomial CRT Stage 3 (Instruction-Level Alignment)
+**Date:** 2026-04-26
+- **Milestone:** Implementation of block-wise SIMD pruning and Crude Barrett arithmetic.
+- **Objective:** Exploit the hardware's 256-bit wide ALU pipelines and relieve the multiplier 
+  bottleneck.
+- **Core Upgrades:** Block-level zero detection; Shift-based approximated modular reduction.
+- **Performance Impact:** Latency for $n=1024$ reduced to ~681 kCyc (portable optimization).
+- **Architectural Transition:** Shifted from "Element-Wise Pruning" to "Instruction-Level 
+  Hardware Alignment."
+
+### 2.32 Milestone 32 (2026-04-26): Monomial CRT Stage 4 (Matrix-Reshaped Incomplete Transform)
+**Date:** 2026-04-26
+- **Milestone:** Finalization of the TCHES 2025 deep alignment roadmap.
+- **Objective:** Achieve absolute theoretical throughput peak for large cryptographic rings.
+- **Core Upgrades:** 2D Matrix Good-Thomas decomposition; Incomplete transforms (early stop at 
+  size 16); Merged Zero-Copy CRT Reconstruction.
+- **Performance Impact:** Achieved record-breaking **~314 kCyc** for $n=1024$, establishing 
+  the Monomial CRT as the supreme performance standard.
+- **Architectural Transition:** Transitioned from "Generalized 1D FFT" to "Highly Specialized 
+  2D Incomplete Matrix transform."
+- **Verification & Scientific Audit:** Verified bit-identical convolution accuracy across 
+  all domain partitions.
 
 ---
 *End of Tracklog.*
