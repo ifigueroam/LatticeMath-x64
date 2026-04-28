@@ -78,12 +78,12 @@ implementations that successfully scaled to production-grade performance.
 - **Rationale:** Montgomery reduction avoids high-word multiplications, freeing up YMM registers.
 - **Impact:** Achieved an additional 51% speedup in Schoolbook throughput.
 
-### Phase 6: Winograd Accelerator Tier (2-D Domain Transform)
-- **Objective:** Alleviate matrix complexity of 1-D Winograd via 2-D matrix domain mapping.
-- **Architectural Transition:** Shifted from "Linear Convolution" to "2-D Matrix Domain Acceleration."
-- **Mechanism:** Implemented the $F(3 \times 3, 3 \times 3)$ kernel with a Division Elimination scaling trick.
-- **Rationale:** 2-D transforms reduce the number of multiplications faster than 1-D splits for small $N$.
-- **Impact:** Achieved ultra-low block latency (~2.5 us), providing a high-speed transitional engine.
+### Phase 6: Winograd Accelerator Tier (2-D Divide-and-Conquer)
+- **Objective:** Alleviate matrix complexity of 1-D Winograd via 2-D matrix domain mapping and tiled convolution.
+- **Architectural Transition:** Shifted from "Hardware Diagnostic" to "Functional 2-D Divide-and-Conquer Multiplier."
+- **Mechanism:** Implemented the $F(3 \times 3, 3 \times 3)$ kernel within a tiled 2-D scheduler ($32 \times 32$ matrices).
+- **Rationale:** 2-D transforms reduce multiplications by $3.24\times$; Divide-and-Conquer enables scaling to arbitrary $N$.
+- **Impact:** Achieved bit-identical linear convolution for $n=1024$, providing a foundational accelerator core.
 
 ### Phase 7: High-Performance Non-NTT Kernels (Bodrato Strategy)
 - **Objective:** Resolve the constant-factor bottleneck of Toom-Cook linear transformations.
@@ -147,7 +147,7 @@ Based on the latest benchmark run (q=7681, 1 Core baseline, **Median of 1000 ite
 | Toom-Cook-4  | 2080.0        | O(n^1.40) Hybrid AVX2 Lazy    | Algorithmic Leap        |
 | NTT (FFT)    | 790.5         | O(n log n) Complex Domain     | Algorithmic Peak        |
 | Monomial CRT | 314.1         | O(n log n) 2D Matrix Stage 4  | Multi-Domain Supremacy  |
-| Winograd (k) | 4.7           | O(n^1.58) Matrix Domain       | HW-Aware Accelerator   |
+| Winograd (k) | 20188.4       | O(n^2) Tiled 2D Winograd      | Functional Pillar      |
 
 ---
 

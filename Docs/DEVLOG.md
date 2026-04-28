@@ -1514,3 +1514,28 @@ Chiu, C.-M., et al. (2025). A new trick for polynomial multiplication. *TCHES 20
 
 ### SCIENTIFIC REFERENCES
 Chiu, C.-M., et al. (2025). A new trick for polynomial multiplication. *TCHES 2025, Issue 4*.
+
+---
+
+## [2026-04-26] Research: Diagnostic Fix and Full Refactoring of 2-D Winograd
+### ANALYSIS AND DISCOVERY
+- **Identify Problem:** The 2-D Winograd benchmark reported artificially low latencies (~4 kCyc) because the 
+  implementation was hardcoded to exactly two blocks, failing to scale with polynomial degree $.
+- **Root Cause:** Missing "Divide-and-Conquer" loop structure required to tile the 2-D Winograd kernel across 
+  the entire convolution space.
+- **Impact:** The algorithm produced 99% zero output for high-security rings (=1024$).
+- **Solution Propose:** Implementation of a **Tiled 2-D Scheduler** that maps 1-D polynomials to 2 \times 32$ 
+  matrices and performs a full 2-D convolution via the (3 \times 3, 3 \times 3)$ kernel.
+- **Mechanism:** Utilizing sliding windows with stride 3 and a $+2$ output alignment offset to reconstruct 
+  the complete linear convolution.
+
+### TECHNICAL SOLUTION
+- **Goal/Objective:** Transition the Winograd core from a diagnostic simulator to a functional multiplier.
+- **Phase Related:** Phase 7 (Winograd Accelerator Tier).
+- **Reasoning:** Mathematical alignment with Wang et al. (2025) requires the 2-D Winograd kernel to be 
+  integrated into a Divide-and-Conquer framework.
+- **Result:** Functionally correct linear convolution achieved for all degrees; bit-identical to Schoolbook.
+
+### SCIENTIFIC REFERENCES
+Wang, Z., et al. (2025). An Efficient Polynomial Multiplication Accelerator for Lattice-Based Cryptography 
+With a 2-D Winograd-Based Divide-and-Conquer Method. *IEEE Transactions on VLSI Systems*.

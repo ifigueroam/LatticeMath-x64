@@ -1,6 +1,49 @@
 ---
 
-## [2026-04-25] Study: Architectural Roadmap for Peak Efficiency in Monomial CRT (TCHES 2025 Alignment)
+## [2026-04-26] Research: Roadmap for 2-D Winograd-Based Divide-and-Conquer Implementation
+**Objective:** Establish the mathematical and architectural roadmap for refactoring `polymul_winograd` to a full-scale polynomial multiplier, aligning with the "Divide-and-Conquer" architecture (Wang et al., 2025).
+
+### 1. Mathematical Analysis (1-D to 2-D Mapping)
+A 1-D polynomial convolution $C(x) = A(x)B(x)$ of degree $n-1$ can be mapped to a 2-D matrix convolution by reshaping the $n$ coefficients into a $K \times K$ matrix $M$, where $K \approx \sqrt{n}$.
+- **Reshaping:** $a_{i,j} = a_{iK+j}$ for $0 \le i, j < K$.
+- **2-D Form:** $A(X, Y) = \sum_{i=0}^{K-1} \sum_{j=0}^{K-1} a_{i,j} Y^i X^j$, where $X=x$ and $Y=x^K$.
+- **Convolution:** The product $C(X, Y) = A(X, Y) \times B(X, Y)$ is a 2-D convolution of $M_A$ and $M_B$.
+- **Reconstruction:** The final 1-D polynomial is recovered by $c_{iK+j} = \sum_{i,j} M_C[i][j]$.
+
+### 2. Algorithmic Roadmap (Tiled 2-D Winograd)
+To compute the $2K-1 \times 2K-1$ result matrix $M_C$ using the $F(3 \times 3, 3 \times 3)$ kernel:
+1. **Zero-Padding:** Pad $M_A$ and $M_B$ to the nearest multiple of the kernel stride. For $K=32$, a $32 \times 32$ matrix is padded to allow sliding windows.
+2. **Nested Tiling:**
+   - Iterate through $M_B$ in $3 \times 3$ blocks ($K_r$).
+   - Iterate through $M_A$ in $5 \times 5$ sliding tiles ($D_{in}$).
+   - Apply `winograd_kernel_3x3(out, D_in, K_r, q)`.
+3. **Overlap-Add:** Accumulate the $3 \times 3$ outputs into the global 2-D matrix $M_C$ at positions corresponding to the block indices.
+4. **Final 1-D Summation:** Perform an overlap-add pass across $M_C$ to produce the final $2n-1$ coefficients in the 1-D buffer.
+
+### 3. Verification Strategy
+- **Baseline Comparison:** The results must be bit-identical to the `poly_polymul_ref` (Schoolbook) results for $n=256, 512, 1024$.
+- **Complexity Validation:** The cycle count should scale at approximately $O(n^2)$ if implemented as a single-level tiled multiplier, but with a significantly lower constant factor due to the $3.24\times$ reduction in multiplications provided by the Winograd kernel ($25$ vs $81$ per $3 \times 3$ block).
+
+---
+
+**Objective:** Analyze the current `Scripts/05-winograd.c` source code and its benchmark performance in `00-benchmark.c` to identify discrepancies between the implementation and the Wang et al. (2025) "Divide-and-Conquer" paper.
+
+### 1. Analysis of Benchmark Discrepancies
+The extremely low cycle counts reported in the benchmark (e.g., ~4.7 kCyc) for all polynomial sizes ($n=256, 512, 1024$) were found to be the result of a **fixed-work implementation**.
+- **Fixed Workload:** The `polymul_winograd` function is currently hardcoded to execute exactly two blocks of the $F(3 \times 3, 3 \times 3)$ kernel, regardless of the input degree $n$.
+- **Simulation vs. Implementation:** The benchmark currently measures the latency of a hardware-unit simulator rather than a full polynomial multiplier. This results in an "apples-to-oranges" comparison where Winograd performs $O(1)$ work while other algorithms perform $O(n \log n)$ or $O(n^{1.58})$ work.
+- **Impact:** The implementation produces a correct result only for $n=8$. For larger $n$, the output is 99% zeros, as only the first 15 coefficients are computed.
+
+### 2. Scientific Alignment Audit (Wang et al., 2025)
+The implementation was evaluated against the "An Efficient Polynomial Multiplication Accelerator..." reference:
+- **Mathematical Alignment:** The `winograd_kernel_3x3` is correctly implemented, utilizing the appropriate transformation matrices and the **Division-Free scaling** trick ($SCALE\_INV = 2347$).
+- **Architectural Misalignment:** The primary innovation of the paper—the **2-D Winograd-Based Divide-and-Conquer Method**—is missing. The current code implements the "leaf node" (the accelerator core) but lacks the recursive or tiled scheduler required to handle large-degree polynomials.
+
+### 3. Scientific Verdict
+The current implementation is an accurate diagnostic of the hardware accelerator core but fails as a functional multiplier for Lattice-Based Cryptography rings. To reach full alignment, the algorithm must be refactored into a tiled or recursive framework that applies the 2-D kernel across the entire convolution space.
+
+---
+
 **Objective:** Deconstruct the current "Stage 1" implementation of the Monomial CRT algorithm 
 and define the technical requirements to elevate it to "Stage 3" (Peak Hardware Efficiency), 
 as defined by the Chiu et al. (TCHES 2025) framework.

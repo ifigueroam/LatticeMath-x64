@@ -6,6 +6,27 @@ corresponding code-level changes.
 
 ---
 
+## [2026-04-26] Implementation: 2-D Winograd-Based Divide-and-Conquer Multiplier
+**Related Research:** [2026-04-26] Research: Roadmap for 2-D Winograd-Based Divide-and-Conquer Implementation
+**Target:** `Scripts/05-winograd.c`
+
+### 1. Implementation Summary
+Successfully refactored the `polymul_winograd` diagnostic script into a full-scale polynomial multiplier. The implementation now utilizes a tiled 2-D convolution strategy to perform the complete $2n-1$ convolution, aligning with the "Divide-and-Conquer" architecture described by Wang et al. (2025).
+
+### 2. Applied Optimization Details
+- **2-D Reshaping:** Implemented a row-major mapping from 1-D polynomial coefficients to $32 \times 32$ matrices, enabling 2-D matrix convolution.
+- **Tiled Winograd Scheduler:** Developed a nested loop structure that tiles the 2-D result matrix into $3 \times 3$ blocks. The scheduler slides a $5 \times 5$ window over the input matrix $M_A$ with a stride of 3, matching the output dimension of the $F(3 \times 3, 3 \times 3)$ kernel.
+- **Alignment Offsets:** Corrected the Winograd output mapping by introducing a $+2$ offset in the accumulation phase, ensuring that the Winograd-generated coefficients align with the center-point convolution requirements.
+- **Overlap-Add Reconstruction:** Integrated a 2-D to 1-D overlap-add summation pass to recover the final product coefficients from the Winograd domain result matrix $M_C$.
+
+### 3. Verification & Audit
+- **Correctness:** Verified bit-identical results against the Schoolbook reference for $n=8, 256, 1024$.
+- **Benchmark Alignment:** The `00-benchmark.c` suite now correctly reports the full workload latency, providing a realistic performance baseline for future SIMD vectorization of the Winograd kernel.
+
+---
+
+---
+
 ## [2026-04-26] Implementation: Monomial CRT Phase 23.C (Merged iNTT)
 **Related Research:** [2026-04-26] Study: Performance Analysis and TCHES 2025 Deep Alignment
 **Target:** `Scripts/06-monomial.c`

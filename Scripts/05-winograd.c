@@ -101,57 +101,90 @@ static void winograd_kernel_3x3(T out[3][3], const T tile[5][5], const T filter[
 
 /**
  * @brief Standardized Winograd Polynomial Multiplication Wrapper
- * Orchestrates filter reversal and tiling to produce a linear convolution.
+ * Orchestrates 1-D to 2-D reshaping and tiled 2-D convolution.
  */
 void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q) {
     size_t outN = aN + bN - 1;
     for (size_t i = 0; i < outN; i++) c[i] = 0;
 
-    // 1. Prepare Filter (Length 9): Reverse B to convert Winograd correlation to convolution
-    T filter_1d[9] = {0};
-    for (size_t i = 0; i < bN && i < 9; i++) {
-        filter_1d[i] = b[bN - 1 - i];
-    }
-    T filter_2d[3][3];
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) filter_2d[i][j] = filter_1d[i * 3 + j];
+    // Tiling dimension K. For n=1024, K=32.
+    const size_t K = 32;
+    const size_t K2 = K * K;
+
+    T* MA = (T*)calloc(K2, sizeof(T));
+    T* MB = (T*)calloc(K2, sizeof(T));
+    // Result matrix MC size (2K)x(2K)
+    T* MC = (T*)calloc(4 * K2, sizeof(T));
+
+    if (!MA || !MB || !MC) {
+        if (MA) free(MA);
+        if (MB) free(MB);
+        if (MC) free(MC);
+        return;
     }
 
-    /**
-     * 2. Overlap-Add Tiling:
-     * To compute the full 15-coefficient product for n=8, we use two kernel blocks.
-     * Block 0 offset -7: produces c[0] to c[8]
-     * Block 1 offset  2: produces c[9] to c[17] (truncated to 15)
-     */
-    for (int block = 0; block < 2; block++) {
-        T tile_1d[17] = {0};
-        int start_offset = (block == 0) ? -7 : 2;
+    // 1. Reshape 1-D polynomials to 2-D Matrices (Row-major)
+    for (size_t i = 0; i < aN && i < K2; i++) MA[i] = a[i];
+    for (size_t i = 0; i < bN && i < K2; i++) MB[i] = b[i];
 
-        for (int i = 0; i < 17; i++) {
-            int idx = start_offset + i;
-            if (idx >= 0 && (size_t)idx < aN) {
-                tile_1d[i] = a[idx];
+    // 2. Tiled 2-D Winograd Convolution
+    for (int ib = 0; ib < (int)K; ib += 3) {
+        for (int jb = 0; jb < (int)K; jb += 3) {
+            
+            T filter_2d[3][3] = {0};
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (ib + i < (int)K && jb + j < (int)K)
+                        filter_2d[2 - i][2 - j] = MB[(ib + i) * K + (jb + j)];
+                }
             }
-        }
 
-        T tile_2d[5][5];
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) tile_2d[i][j] = tile_1d[i * 3 + j];
-        }
+            // Slide window ia starting from -2 to capture the start of convolution (c0)
+            for (int ia = -2; ia < (int)K; ia += 3) {
+                for (int ja = -2; ja < (int)K; ja += 3) {
+                    
+                    T tile_2d[5][5] = {0};
+                    for (int i = 0; i < 5; i++) {
+                        for (int j = 0; j < 5; j++) {
+                            int r = ia + i;
+                            int l = ja + j;
+                            if (r >= 0 && r < (int)K && l >= 0 && l < (int)K)
+                                tile_2d[i][j] = MA[r * K + l];
+                        }
+                    }
 
-        T res_2d[3][3];
-        winograd_kernel_3x3(res_2d, tile_2d, filter_2d, q);
+                    T res_2d[3][3];
+                    winograd_kernel_3x3(res_2d, tile_2d, filter_2d, q);
 
-        // 3. Reshape and Accumulate results into standardized output
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                int c_idx = (block == 0) ? (i * 3 + j) : (9 + i * 3 + j);
-                if ((size_t)c_idx < outN) {
-                    c[c_idx] = res_2d[i][j];
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            int row = ia + ib + i + 2;
+                            int col = ja + jb + j + 2;
+                            if (row >= 0 && row < (int)(2 * K) && col >= 0 && col < (int)(2 * K)) {
+                                T2 sum = (T2)MC[row * (2 * K) + col] + res_2d[i][j];
+                                MC[row * (2 * K) + col] = (T)(sum % q);
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+
+    // 3. 2-D to 1-D Reconstruction (Overlap-Add)
+    for (int i = 0; i < (int)(2 * K); i++) {
+        for (int j = 0; j < (int)(2 * K); j++) {
+            size_t c_idx = i * K + j;
+            if (c_idx < outN) {
+                T2 sum = (T2)c[c_idx] + MC[i * (2 * K) + j];
+                c[c_idx] = (T)(sum % q);
+            }
+        }
+    }
+
+    free(MA);
+    free(MB);
+    free(MC);
 }
 
 #ifndef BENCHMARK

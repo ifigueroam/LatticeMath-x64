@@ -626,5 +626,32 @@ into a production-grade, hardware-optimized library for Post-Quantum Cryptograph
 - **Risk Assessment:** Highly specialized code reduces portability across different ring sizes.
 - **Hardware Mechanism:** Utilized matrix-reshaped block NTTs to maximize cache-line data flow.
 
+### Milestone 33: 2-D Winograd Full-Scale Refactoring
+- **Milestone:** Transition of the Winograd core from a diagnostic script to a functional multiplier.
+- **Date:** 2026-04-26
+- **Issue:** Previous implementation was hardcoded to 2 blocks, producing incorrect (zero) results 
+  for $n > 8$.
+- **Objective:** Realize a full $O(n^2)$ multiplier using the tiled 2-D Divide-and-Conquer framework.
+- **Implementation Analysis:** Mapped 1-D polynomials to $32 \times 32$ matrices. Implemented a 
+  tiled convolution scheduler using $F(3 \times 3, 3 \times 3)$ Winograd kernels with sliding windows 
+  and overlap-add reconstruction.
+- **Architectural Transition:** Shifted from "Hardware Diagnostic" to "Functional Multiplier Pillar."
+- **Roadmap Integration:** Phase 7: Winograd Accelerator Tier (Finalization).
+- **Findings (Hardware):** Identified extreme latency in scalar C implementation (~20,000 kCyc), 
+  confirming the need for SIMD acceleration of the transformation matrices.
+- **Findings (Arithmetic/Algorithmic):** Successfully validated the 2-D transformation offsets 
+  ($+2$ alignment) for correct convolution mapping.
+- **Verification Integrity & Alignment:** 100% bit-identical results against Schoolbook for 
+  all benchmark degrees ($256, 512, 1024$).
+- **Core Upgrades:** Implemented generalized tiled loops and 2-D to 1-D overlap-add reconstruction 
+  in `Scripts/05-winograd.c`.
+- **Performance Impact:** Latency correctly reflects the full workload; cycle counts now scale 
+  deterministically with $n$.
+- **Scientific Audit:** Wang, Z., et al. (2025). An Efficient Polynomial Multiplication Accelerator.
+- **Risk Assessment:** High computational cost of scalar matrix transforms creates a 
+  performance bottleneck.
+- **Hardware Mechanism:** Utilized $32 \times 32$ row-major reshaping to exploit 2-D spatial 
+  locality.
+
 ---
 *End of Tracklog.*
