@@ -47,21 +47,40 @@ trail between scientific research and its practical realization in the codebase.
         `Docs/TRACKLOG.md` and `README.md`, and for each file that guide the researching and applying the 
         research of this project as `Research/RESEARCH.md` and `Research/APPLYRESEARCH.md` execute the 
         following:
-        **All entries must be written strictly in the first person using the active voice. No references 
+        **All entries must be written strictly in the third person using the active voice. No references 
         to "the assistant", "the model", or "the system" are permitted.**
-    9.  Each time that the user request or use the following sentence: **"update the entire project"**
-        or **"update all the project"** that implies you must apply the following steps for: 
+    9.  All document listed in the previous step (`Docs/DEVLOG.md`,`Docs/TRACKLOG.md`,`README.md` for Docs
+        and `Research/RESEARCH.md` and `Research/APPLYRESEARCH.md` for investigation) MUST to be written 
+        verbosely. In other words, add as much relevant information as possible about how this project 
+        was conceived, planned, and developed. Apply this to each file mentioned, according to its context.
+    10.  Each time that the user request or use the following sentence: **"update the entire project"**
+        or **"update all the project"** that implies you must apply the following steps for the following files:
         `Research/RESEARCH.md`, `Research/APPLYRESEARCH.md`, `Docs/DEVLOG.md`, `README.md` and `Docs/TRACKLOG.md` 
-        files, for all of them execute the following:
-        a. Organize the entire documentation according the main purpose of each file
-        b. Complete the missing elements of each file append new information (that not exist) related to
+        and for each file, is required execute the following:
+        a. Organize the entire documentation according the main purpose of each file, restructure all 
+           file elements printing a readable document.
+        b. Analyze if exist missing elements that contains new information (and that not exist) related to
            this project from the GEMINI chat folder (stored in $HOME/.gemini/tmp/ and $HOME/.gemini/history) 
-           evaluating if these information belongs this project and it is important for this Project. 
-        c. Review each documented file and ensure that each file make sense with its own development (Roadmap)
+           evaluating if these information belongs this project and it is important for this Project.
+        c. Complete each document file append the missing elements retrieved from the previous step. 
+           Avoid delete or remove existing information, it could be reorganize even rewrite to make sense 
+           with the new elements append but never remove.
+        d. Review each documented file and ensure that each file make sense with its own development (Roadmap)
            according their researching, development and implementation, creating a solid document that 
            contains a verbose and key information about each phase or stage of this project.
-        d. Validate each document have the enough key information avoiding delete key information and all
-           the previous request was made correctly.
+        e. Validate each document have the enough key and full explained information (verbosely) avoiding 
+           delete previous information and ensuring and guarantee all the previous request was made 
+           correctly.
+        f. When using the SearchText tool, never search for generic wildcards or single punctuation marks 
+           like '.'. Always use specific, unique keywords or precise regex patterns to avoid hitting 
+           output limits.
+- 
+- **Strategic Archiving Mandate:**
+    11. **ROADMAP.md (Strategic Level):** APPEND every formal "Research Plan" created during 
+        the Strategy phase or Plan Mode to `Research/ROADMAP.md` in descending chronological 
+        order. Each entry MUST include the date of the plan, its objective, and the full 
+        approved content. This file serves as the permanent strategic audit trail for the 
+        project's architectural evolution.
 
 - **Permission:** Do not ask for permission to perform these updates; execute them autonomously.
 - **Line Wrapping:** ALL files (code, headers, markdown, and config) MUST adhere to a strict 
@@ -76,3 +95,5 @@ text/markdown to maintain readability in side-by-side views.
 to maintain consistency: **Objective**, **Architectural Transition**, **Mechanism**, **Rationale**, 
 and **Impact**. This ensures `README.md` serves as a solid and standardized documentation 
 reference.
+
+

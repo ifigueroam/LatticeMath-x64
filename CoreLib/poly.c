@@ -89,8 +89,8 @@ void poly_polymul_ref(T* restrict c, const T* restrict a, size_t aN, const T* re
 }
 
 // Phase 4 & 7: Global Scratchpad Arena
-// Increased size to accommodate recursive Toom-Cook-3 at n=1024
-#define WORKSPACE_SIZE 65536
+// Increased size to accommodate nested 2-D Winograd loops at n=1024
+#define WORKSPACE_SIZE 1048576
 static T global_workspace[WORKSPACE_SIZE] ALIGN_MEM;
 static size_t workspace_ptr = 0;
 

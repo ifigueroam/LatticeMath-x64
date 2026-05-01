@@ -18,6 +18,28 @@
 #include "common.h"
 #include "zq.h"
 
+/**
+ * @brief Montgomery-Optimized Multiplication for SSE (128-bit)
+ * Multiplies elements in va and vb and reduces mod q using Montgomery.
+ */
+static inline __m128i zq_mul_sse(__m128i va, __m128i vb, __m128i v_q) {
+    __m128i v_qinv = _mm_set1_epi16(7679);
+
+    __m128i v_prod_low = _mm_mullo_epi16(va, vb);
+    __m128i v_prod_high = _mm_mulhi_epi16(va, vb);
+
+    __m128i v_u = _mm_mullo_epi16(v_prod_low, v_qinv);
+    __m128i v_t = _mm_mulhi_epi16(v_u, v_q);
+
+    __m128i v_res = _mm_sub_epi16(v_prod_high, v_t);
+
+    __m128i v_zero = _mm_setzero_si128();
+    __m128i mask = _mm_cmpgt_epi16(v_zero, v_res);
+    v_res = _mm_add_epi16(v_res, _mm_and_si128(mask, v_q));
+
+    return v_res;
+}
+
 #if defined(__AVX2__)
 #include <immintrin.h>
 
@@ -120,6 +142,32 @@ static inline void poly_sub_simd(T* restrict c, const T* restrict a, const T* re
     for (; i < n; i++) {
         c[i] = zq_mod(a[i] + q - b[i], q);
     }
+}
+
+/**
+ * @brief Montgomery-Optimized Multiplication for AVX2
+ * Multiplies elements in va and vb and reduces mod q using Montgomery.
+ * Note: Returns result in Montgomery domain if vb is a standard value,
+ * or normal domain if one of them is in Montgomery domain.
+ */
+static inline __m256i zq_mul_avx2(__m256i va, __m256i vb, __m256i v_q) {
+    // Montgomery reduction for q=7681
+    // Reference: Seiler (2018)
+    __m256i v_qinv = _mm256_set1_epi16(7679);
+
+    __m256i v_prod_low = _mm256_mullo_epi16(va, vb);
+    __m256i v_prod_high = _mm256_mulhi_epi16(va, vb);
+
+    __m256i v_u = _mm256_mullo_epi16(v_prod_low, v_qinv);
+    __m256i v_t = _mm256_mulhi_epi16(v_u, v_q);
+
+    __m256i v_res = _mm256_sub_epi16(v_prod_high, v_t);
+
+    // Final check: if res < 0, res += q
+    __m256i mask = _mm256_cmpgt_epi16(_mm256_setzero_si256(), v_res);
+    v_res = _mm256_add_epi16(v_res, _mm256_and_si256(mask, v_q));
+
+    return v_res;
 }
 
 #else

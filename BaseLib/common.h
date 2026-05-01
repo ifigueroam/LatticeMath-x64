@@ -23,15 +23,40 @@
 #endif
 
 /**
- * @brief Returns current CPU cycle count using RDTSC for cycle-accurate benchmarking.
+ * @brief Returns current CPU cycle count using RDTSCP for serialized, cycle-accurate benchmarking.
+ * Includes CPUID fence to prevent instruction reordering across the timing window.
  */
-static inline uint64_t rdtsc(void) {
+static inline uint64_t rdtsc_start(void) {
 #if defined(__x86_64__) || defined(_M_X64)
     unsigned int lo, hi;
-    __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
+    __asm__ __volatile__(
+        "cpuid\n\t"
+        "rdtsc\n\t"
+        "mov %%eax, %0\n\t"
+        "mov %%edx, %1\n\t"
+        : "=r"(lo), "=r"(hi)
+        :
+        : "%eax", "%ebx", "%ecx", "%edx");
     return ((uint64_t)hi << 32) | lo;
 #else
-    return 0;  // Fallback for non-x86 architectures
+    return 0;
+#endif
+}
+
+static inline uint64_t rdtsc_end(void) {
+#if defined(__x86_64__) || defined(_M_X64)
+    unsigned int lo, hi;
+    __asm__ __volatile__(
+        "rdtscp\n\t"
+        "mov %%eax, %0\n\t"
+        "mov %%edx, %1\n\t"
+        "cpuid\n\t"
+        : "=r"(lo), "=r"(hi)
+        :
+        : "%eax", "%ebx", "%ecx", "%edx");
+    return ((uint64_t)hi << 32) | lo;
+#else
+    return 0;
 #endif
 }
 

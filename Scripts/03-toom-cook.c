@@ -1,6 +1,6 @@
 /**
- * @file 03-toom.c
- * @brief Section 2.2.3: Toom--Cook 4-way multiplication (Hybrid Execution)
+ * @file 03-toom-cook.c
+ * @brief Section 2.2.3: Toom-Cook 4-way multiplication (Hybrid Execution)
  *
  * Implements the True Definitive Roadmap: Genuine AVX2 Vectorization,
  * SIMD Lazy Interpolation, and Hybrid Karatsuba Fallback.
@@ -22,8 +22,8 @@ void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* re
  * @brief Genuine AVX2 SIMD Evaluation Kernel
  * Evaluates over contiguous n/4 chunks (No Transpose Penalty).
  */
-static inline void toom4_eval_simd(T* a0, T* a1, T* am1, T* a2, T* am2, T* a3, T* ainf, const T* A0,
-                                   const T* A1, const T* A2, const T* A3, size_t nsplit, T q) {
+static inline void toom_cook_eval_simd(T* a0, T* a1, T* am1, T* a2, T* am2, T* a3, T* ainf, const T* A0,
+                                       const T* A1, const T* A2, const T* A3, size_t nsplit, T q) {
     size_t i = 0;
 #if defined(__AVX2__)
     __m256i v_q = _mm256_set1_epi16(q);
@@ -95,8 +95,8 @@ static inline void toom4_eval_simd(T* a0, T* a1, T* am1, T* a2, T* am2, T* a3, T
 /**
  * @brief Genuine AVX2 SIMD Lazy Interpolation Kernel
  */
-static inline void toom4_interp_simd(T* c, T* r0, T* r1, T* rm1, T* r2, T* rm2, T* r3, T* rinf,
-                                     size_t prod_size, size_t nsplit, T q) {
+static inline void toom_cook_interp_simd(T* c, T* r0, T* r1, T* rm1, T* r2, T* rm2, T* r3, T* rinf,
+                                         size_t prod_size, size_t nsplit, T q) {
     size_t i = 0;
 #if defined(__AVX2__)
     __m256i v_q = _mm256_set1_epi16(q);
@@ -219,9 +219,9 @@ static inline void toom4_interp_simd(T* c, T* r0, T* r1, T* rm1, T* r2, T* rm2, 
 /**
  * @brief Hybrid Execution: Toom-4 with Karatsuba Fallback
  */
-void polymul_toom4_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q,
-                             size_t threshold) {
-    // Definitive Roadmap: Toom-4 is only used as a high-level partitioner.
+void polymul_toom_cook_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q,
+                                 size_t threshold) {
+    // Definitive Roadmap: Toom-Cook is only used as a high-level partitioner.
     // If n is <= 256, immediately dispatch to SIMD Karatsuba.
     if (n <= 256) {
         polymul_karatsuba_recursive(c, a, b, n, q, 32);
@@ -240,10 +240,10 @@ void polymul_toom4_recursive(T* restrict c, const T* restrict a, const T* restri
     T *a3 = poly_get_workspace(nsplit), *b3 = poly_get_workspace(nsplit);
     T *ainf = poly_get_workspace(nsplit), *binf = poly_get_workspace(nsplit);
 
-    toom4_eval_simd(a0, a1, am1, a2, am2, a3, ainf, &a[0], &a[nsplit], &a[2 * nsplit], &a[3 * nsplit],
-                    nsplit, q);
-    toom4_eval_simd(b0, b1, bm1, b2, bm2, b3, binf, &b[0], &b[nsplit], &b[2 * nsplit], &b[3 * nsplit],
-                    nsplit, q);
+    toom_cook_eval_simd(a0, a1, am1, a2, am2, a3, ainf, &a[0], &a[nsplit], &a[2 * nsplit],
+                        &a[3 * nsplit], nsplit, q);
+    toom_cook_eval_simd(b0, b1, bm1, b2, bm2, b3, binf, &b[0], &b[nsplit], &b[2 * nsplit],
+                        &b[3 * nsplit], nsplit, q);
 
     T* r0 = poly_get_workspace(prod_size);
     T* r1 = poly_get_workspace(prod_size);
@@ -253,24 +253,24 @@ void polymul_toom4_recursive(T* restrict c, const T* restrict a, const T* restri
     T* r3 = poly_get_workspace(prod_size);
     T* rinf = poly_get_workspace(prod_size);
 
-    polymul_toom4_recursive(r0, a0, b0, nsplit, q, threshold);
-    polymul_toom4_recursive(r1, a1, b1, nsplit, q, threshold);
-    polymul_toom4_recursive(rm1, am1, bm1, nsplit, q, threshold);
-    polymul_toom4_recursive(r2, a2, b2, nsplit, q, threshold);
-    polymul_toom4_recursive(rm2, am2, bm2, nsplit, q, threshold);
-    polymul_toom4_recursive(r3, a3, b3, nsplit, q, threshold);
-    polymul_toom4_recursive(rinf, ainf, binf, nsplit, q, threshold);
+    polymul_toom_cook_recursive(r0, a0, b0, nsplit, q, threshold);
+    polymul_toom_cook_recursive(r1, a1, b1, nsplit, q, threshold);
+    polymul_toom_cook_recursive(rm1, am1, bm1, nsplit, q, threshold);
+    polymul_toom_cook_recursive(r2, a2, b2, nsplit, q, threshold);
+    polymul_toom_cook_recursive(rm2, am2, bm2, nsplit, q, threshold);
+    polymul_toom_cook_recursive(r3, a3, b3, nsplit, q, threshold);
+    polymul_toom_cook_recursive(rinf, ainf, binf, nsplit, q, threshold);
 
     memset(c, 0, (2 * n - 1) * sizeof(T));
-    toom4_interp_simd(c, r0, r1, rm1, r2, rm2, r3, rinf, prod_size, nsplit, q);
+    toom_cook_interp_simd(c, r0, r1, rm1, r2, rm2, r3, rinf, prod_size, nsplit, q);
 
     poly_workspace_set_mark(workspace_mark);
 }
 
-void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q) {
+void polymul_toom_cook(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q) {
     size_t n_padded = (n % 4 == 0) ? n : ((n / 4) + 1) * 4;
     if (n_padded == n) {
-        polymul_toom4_recursive(c, a, b, n, q, 32);
+        polymul_toom_cook_recursive(c, a, b, n, q, 32);
     } else {
         T *ap, *bp, *cp;
         ap = poly_get_workspace(n_padded);
@@ -280,7 +280,7 @@ void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size
         memset(bp, 0, n_padded * sizeof(T));
         memcpy(ap, a, n * sizeof(T));
         memcpy(bp, b, n * sizeof(T));
-        polymul_toom4_recursive(cp, ap, bp, n_padded, q, 32);
+        polymul_toom_cook_recursive(cp, ap, bp, n_padded, q, 32);
         memcpy(c, cp, (2 * n - 1) * sizeof(T));
         poly_workspace_set_mark(poly_workspace_get_mark() - (2 * n_padded - 1 + 2 * n_padded));
     }
@@ -293,7 +293,7 @@ int main(void) {
     T a[8] ALIGN_MEM, b[8] ALIGN_MEM;
     T c[15] ALIGN_MEM;
 
-    printf("--- Toom-4 Definitive Roadmap (Hybrid SIMD) ---\n");
+    printf("--- Toom-Cook Definitive Roadmap (Hybrid SIMD) ---\n");
     printf("Method: O(n^1.40) 4-way Split with SIMD Lazy Interpolation.\n");
     printf("Step 1: Split a and b into 4 segments (k=4).\n");
     printf("Step 2: Evaluate at 7 points: {0, 1, -1, 2, -2, 3, inf}.\n");
@@ -308,7 +308,7 @@ int main(void) {
     poly_print("b", b, n);
 
     poly_reset_workspace();
-    polymul_toom3(c, a, b, n, q);
+    polymul_toom_cook(c, a, b, n, q);
 
     poly_print("c", c, 15);
     printf("-----------------------------------------------\n");

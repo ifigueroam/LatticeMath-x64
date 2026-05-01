@@ -17,6 +17,8 @@ before its implementation in high-performance C.
     correctness.
 3.  **test_ntt_swap.py**: Developed to debug Twiddle Factor Interleaving logic, 
     verifying indexing when using loop-swapping for SIMD optimization.
+4.  **format_docs.py**: Enforces strict 105-column wrapping and terminology 
+    sanitization across the project's documentation corpus.
 
 ## Why they exist
 While the core engine is now fully implemented in C, these scripts remain essential for 

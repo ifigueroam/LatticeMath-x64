@@ -1,8 +1,8 @@
 /**
- * @file 06-monomial.c
- * @brief Phase 22: Monomial Factor CRT (TCHES 2025 Peak Efficiency)
+ * @file 05-crt-polymul.c
+ * @brief Phase 22: CRT Polynomial Multiplication (TCHES 2025 Peak Efficiency)
  *
- * Implements Stage 3 Peak Efficiency: Block-Wise Pruning, 
+ * Implements Stage 3 Peak Efficiency: Block-Wise Pruning,
  * Crude Barrett Approximation, and Vectorized Reconstruction.
  */
 #include <immintrin.h>
@@ -59,7 +59,7 @@ static void ntt_optimized_portable(T* a, size_t n, T q, const T* tw) {
         for (size_t i = 0; i < n; i += len) {
             for (size_t j = 0; j < half; j++) {
                 T v_val = a[i + j + half];
-                if (v_val == 0) continue; // Portable Pruning
+                if (v_val == 0) continue;  // Portable Pruning
 
                 T w = tw[j * step];
                 T u_val = a[i + j];
@@ -92,7 +92,7 @@ static void intt_optimized_portable(T* a, size_t n, T q, const T* itw) {
  * Computes C(x) = A(x)B(x) mod (x^16 - w)
  */
 static void weighted_mul_16(T* c, const T* a, const T* b, T w, T q) {
-    T tmp[32] = {0}; // Linear product result buffer
+    T tmp[32] = {0};  // Linear product result buffer
     // Schoolbook 16x16 (Could be Karatsuba, but 16x16 is small)
     for (int i = 0; i < 16; i++) {
         if (a[i] == 0) continue;
@@ -128,10 +128,19 @@ static inline void block16_mul_scalar(T* res, const T* a, T w, T q) {
 static void ntt_matrix_incomplete(T* a, size_t n, T q, const T* tw) {
     size_t n1, n2, k = 16;
     size_t m = n / k;
-    if (m == 96) { n1 = 3; n2 = 32; }
-    else if (m == 24) { n1 = 3; n2 = 8; }
-    else if (m == 120) { n1 = 15; n2 = 8; }
-    else { ntt_optimized_portable(a, n, q, tw); return; }
+    if (m == 96) {
+        n1 = 3;
+        n2 = 32;
+    } else if (m == 24) {
+        n1 = 3;
+        n2 = 8;
+    } else if (m == 120) {
+        n1 = 15;
+        n2 = 8;
+    } else {
+        ntt_optimized_portable(a, n, q, tw);
+        return;
+    }
 
     size_t mark = poly_workspace_get_mark();
     T* tmp = poly_get_workspace(n);
@@ -145,12 +154,14 @@ static void ntt_matrix_incomplete(T* a, size_t n, T q, const T* tw) {
     for (size_t col = 0; col < n2; col++) {
         if (n1 == 3) {
             T w1 = tw[n / 3], w2 = tw[2 * n / 3];
-            T *b0 = &tmp[(0 * n2 + col) * k];
-            T *b1 = &tmp[(1 * n2 + col) * k];
-            T *b2 = &tmp[(2 * n2 + col) * k];
+            T* b0 = &tmp[(0 * n2 + col) * k];
+            T* b1 = &tmp[(1 * n2 + col) * k];
+            T* b2 = &tmp[(2 * n2 + col) * k];
             T u[16], v1[16], v2[16];
-            memcpy(u, b0, k * sizeof(T)); memcpy(v1, b1, k * sizeof(T)); memcpy(v2, b2, k * sizeof(T));
-            for(int i=0; i<16; i++) {
+            memcpy(u, b0, k * sizeof(T));
+            memcpy(v1, b1, k * sizeof(T));
+            memcpy(v2, b2, k * sizeof(T));
+            for (int i = 0; i < 16; i++) {
                 b0[i] = zq_mod(u[i] + v1[i] + v2[i], q);
                 b1[i] = zq_mod(u[i] + (T2)v1[i] * w1 + (T2)v2[i] * w2, q);
                 b2[i] = zq_mod(u[i] + (T2)v1[i] * w2 + (T2)v2[i] * w1, q);
@@ -161,7 +172,8 @@ static void ntt_matrix_incomplete(T* a, size_t n, T q, const T* tw) {
                 T sum[16] = {0};
                 for (size_t mm = 0; m < n1; mm++) {
                     T w = tw[(j * mm * (n / n1)) % n];
-                    for(int i=0; i<16; i++) sum[i] = zq_mod(sum[i] + (T2)tmp[(mm * n2 + col) * k + i] * w, q);
+                    for (int i = 0; i < 16; i++)
+                        sum[i] = zq_mod(sum[i] + (T2)tmp[(mm * n2 + col) * k + i] * w, q);
                 }
                 memcpy(&tmp[(j * n2 + col) * k], sum, k * sizeof(T));
             }
@@ -175,7 +187,7 @@ static void ntt_matrix_incomplete(T* a, size_t n, T q, const T* tw) {
             size_t half = len >> 1, step = n2 / len;
             for (size_t i = 0; i < n2; i += len) {
                 for (size_t j = 0; j < half; j++) {
-                    T w = tw[j * step * (n / n2)]; 
+                    T w = tw[j * step * (n / n2)];
                     T *u = &row_ptr[(i + j) * k], *v = &row_ptr[(i + j + half) * k];
                     T v_tw[16], u_copy[16];
                     block16_mul_scalar(v_tw, v, w, q);
@@ -194,10 +206,19 @@ static void ntt_matrix_incomplete(T* a, size_t n, T q, const T* tw) {
 static void intt_matrix_incomplete(T* a, size_t n, T q, const T* itw) {
     size_t n1, n2, k = 16;
     size_t m = n / k;
-    if (m == 96) { n1 = 3; n2 = 32; }
-    else if (m == 24) { n1 = 3; n2 = 8; }
-    else if (m == 120) { n1 = 15; n2 = 8; }
-    else { intt_optimized_portable(a, n, q, itw); return; }
+    if (m == 96) {
+        n1 = 3;
+        n2 = 32;
+    } else if (m == 24) {
+        n1 = 3;
+        n2 = 8;
+    } else if (m == 120) {
+        n1 = 15;
+        n2 = 8;
+    } else {
+        intt_optimized_portable(a, n, q, itw);
+        return;
+    }
 
     size_t mark = poly_workspace_get_mark();
     T* tmp = poly_get_workspace(n);
@@ -226,10 +247,14 @@ static void intt_matrix_incomplete(T* a, size_t n, T q, const T* itw) {
     for (size_t col = 0; col < n2; col++) {
         if (n1 == 3) {
             T w1 = itw[n / 3], w2 = itw[2 * n / 3];
-            T *b0 = &a[(0 * n2 + col) * k]; T *b1 = &a[(1 * n2 + col) * k]; T *b2 = &a[(2 * n2 + col) * k];
+            T* b0 = &a[(0 * n2 + col) * k];
+            T* b1 = &a[(1 * n2 + col) * k];
+            T* b2 = &a[(2 * n2 + col) * k];
             T u[16], v1[16], v2[16];
-            memcpy(u, b0, k * sizeof(T)); memcpy(v1, b1, k * sizeof(T)); memcpy(v2, b2, k * sizeof(T));
-            for(int i=0; i<16; i++) {
+            memcpy(u, b0, k * sizeof(T));
+            memcpy(v1, b1, k * sizeof(T));
+            memcpy(v2, b2, k * sizeof(T));
+            for (int i = 0; i < 16; i++) {
                 b0[i] = zq_mod(u[i] + v1[i] + v2[i], q);
                 b1[i] = zq_mod(u[i] + (T2)v1[i] * w1 + (T2)v2[i] * w2, q);
                 b2[i] = zq_mod(u[i] + (T2)v1[i] * w2 + (T2)v2[i] * w1, q);
@@ -239,13 +264,18 @@ static void intt_matrix_incomplete(T* a, size_t n, T q, const T* itw) {
 
     // 3. Normalization and back permutation
     T invM = zq_inverse(m, q);
-    size_t n2_inv_n1 = 0; for (size_t x = 0; x < n1; x++) if ((x * n2) % n1 == 1) n2_inv_n1 = x;
-    size_t n1_inv_n2 = 0; for (size_t x = 0; x < n2; x++) if ((x * n1) % n2 == 1) n1_inv_n2 = x;
+    size_t n2_inv_n1 = 0;
+    for (size_t x = 0; x < n1; x++)
+        if ((x * n2) % n1 == 1) n2_inv_n1 = x;
+    size_t n1_inv_n2 = 0;
+    for (size_t x = 0; x < n2; x++)
+        if ((x * n1) % n2 == 1) n1_inv_n2 = x;
 
     for (size_t j = 0; j < n1; j++) {
         for (size_t col = 0; col < n2; col++) {
             size_t orig_idx = (j * n2 * n2_inv_n1 + col * n1 * n1_inv_n2) % m;
-            for(int i=0; i<16; i++) tmp[orig_idx * k + i] = zq_mod((T2)a[(j * n2 + col) * k + i] * invM, q);
+            for (int i = 0; i < 16; i++)
+                tmp[orig_idx * k + i] = zq_mod((T2)a[(j * n2 + col) * k + i] * invM, q);
         }
     }
     memcpy(a, tmp, n * sizeof(T));
@@ -256,7 +286,8 @@ static void polymul_ring_cyclic_dynamic(T* c_main, const T* a, const T* b, size_
     init_twiddles_dynamic(M, q);
     size_t mark = poly_workspace_get_mark();
     T *fa = poly_get_workspace(M), *fb = poly_get_workspace(M);
-    memset(fa, 0, M * sizeof(T)); memset(fb, 0, M * sizeof(T));
+    memset(fa, 0, M * sizeof(T));
+    memset(fb, 0, M * sizeof(T));
     memcpy(fa, a, (n < M ? n : M) * sizeof(T));
     memcpy(fb, b, (n < M ? n : M) * sizeof(T));
 
@@ -264,16 +295,16 @@ static void polymul_ring_cyclic_dynamic(T* c_main, const T* a, const T* b, size_
     ntt_matrix_incomplete(fb, M, q, tw_main);
 
     for (size_t i = 0; i < M / 16; i++) {
-        T w = tw_main[i * (M / (M/16))];
+        T w = tw_main[i * (M / (M / 16))];
         weighted_mul_16(&fa[i * 16], &fa[i * 16], &fb[i * 16], w, q);
     }
-    
+
     intt_matrix_incomplete(fa, M, q, itw_main);
     for (size_t i = 0; i < M; i++) c_main[i] = fa[i];
     poly_workspace_set_mark(mark);
 }
 
-void polymul_monomial_crt(T* c, const T* a, const T* b, size_t n, T q) {
+void polymul_crt_polymul(T* c, const T* a, const T* b, size_t n, T q) {
     MonomialParams p = get_params(n);
     size_t mark = poly_workspace_get_mark();
     T *c_main = poly_get_workspace(p.n_main), *c_low = poly_get_workspace(p.n_low);
@@ -284,7 +315,8 @@ void polymul_monomial_crt(T* c, const T* a, const T* b, size_t n, T q) {
 
     if (p.n_low > 0) {
         T *la = poly_get_workspace(p.n_low), *lb = poly_get_workspace(p.n_low);
-        memset(la, 0, p.n_low * sizeof(T)); memset(lb, 0, p.n_low * sizeof(T));
+        memset(la, 0, p.n_low * sizeof(T));
+        memset(lb, 0, p.n_low * sizeof(T));
         memcpy(la, a, (n < p.n_low ? n : p.n_low) * sizeof(T));
         memcpy(lb, b, (n < p.n_low ? n : p.n_low) * sizeof(T));
         T* c_low_full = poly_get_workspace(2 * p.n_low - 1);
@@ -318,18 +350,21 @@ int main(void) {
     size_t n = 8;
     T q = 7681;
     T a[8] ALIGN_MEM, b[8] ALIGN_MEM, c[15] ALIGN_MEM, c_ref[15] ALIGN_MEM;
-    printf("--- Monomial Factor CRT (Phase 22) ---\n");
+    printf("--- CRT Polynomial Multiplication (Phase 22) ---\n");
     printf("Method: TCHES 2025 Stage 3 Peak Efficiency.\n\n");
     if (poly_load("A", a, n) != 0) return 1;
     if (poly_load("B", b, n) != 0) return 1;
-    poly_print("a", a, n); poly_print("b", b, n);
+    poly_print("a", a, n);
+    poly_print("b", b, n);
     poly_reset_workspace();
-    polymul_monomial_crt(c, a, b, n, q);
+    polymul_crt_polymul(c, a, b, n, q);
     poly_polymul_ref(c_ref, a, n, b, n, q);
-    poly_print("c (monomial)", c, 15);
+    poly_print("c (crt-polymul)", c, 15);
     poly_print("c (reference)", c_ref, 15);
-    if (memcmp(c, c_ref, 15 * sizeof(T)) == 0) printf("RESULT: CORRECT\n");
-    else printf("RESULT: INCORRECT\n");
+    if (memcmp(c, c_ref, 15 * sizeof(T)) == 0)
+        printf("RESULT: CORRECT\n");
+    else
+        printf("RESULT: INCORRECT\n");
     printf("--------------------------------------\n");
     return 0;
 }

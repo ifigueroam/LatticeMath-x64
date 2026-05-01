@@ -5,7 +5,10 @@
  * Methodology: Median of 1000 iterations with 10 warm-up passes.
  * Metric: CPU Kilocycles (kCyc) - Frequency Independent.
  */
+#define _GNU_SOURCE
+#include <math.h>
 #include <omp.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,13 +22,23 @@
 // External Algorithm Prototypes
 void polymul_karatsuba_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q,
                                  size_t threshold);
-void polymul_toom3(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q);
+void polymul_toom_cook(T* restrict c, const T* restrict a, const T* restrict b, size_t n, T q);
 int polymul_ntt(T* c, const T* a, const T* b, size_t n, T q);
 void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q);
-void polymul_monomial_crt(T* c, const T* a, const T* b, size_t n, T q);
+void polymul_crt_polymul(T* c, const T* a, const T* b, size_t n, T q);
 
 // Function wrappers for iterative benchmarking
 typedef void (*mul_func)(T*, const T*, const T*, size_t, T);
+
+/**
+ * @brief Pins the current thread to a specific CPU core.
+ */
+static void pin_core(int core_id) {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(core_id, &cpuset);
+    sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+}
 
 // Comparison function for qsort to find the median
 static int compare_u64(const void* a, const void* b) {
@@ -36,7 +49,7 @@ static int compare_u64(const void* a, const void* b) {
     return 0;
 }
 
-static void toom4_bench_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
+static void toom_cook_bench_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
     size_t n_padded = (n % 4 == 0) ? n : ((n / 4) + 1) * 4;
     T *a_p, *b_p, *c_p;
     posix_memalign((void**)&a_p, 32, n_padded * sizeof(T));
@@ -46,7 +59,7 @@ static void toom4_bench_wrapper_internal(T* c, const T* a, const T* b, size_t n,
     memset(b_p, 0, n_padded * sizeof(T));
     memcpy(a_p, a, n * sizeof(T));
     memcpy(b_p, b, n * sizeof(T));
-    polymul_toom3(c_p, a_p, b_p, n_padded, q);
+    polymul_toom_cook(c_p, a_p, b_p, n_padded, q);
     memcpy(c, c_p, (2 * n - 1) * sizeof(T));
     free(a_p);
     free(b_p);
@@ -57,8 +70,8 @@ static void winograd_wrapper_internal(T* c, const T* a, const T* b, size_t n, T 
     polymul_winograd(c, a, n, b, n, q);
 }
 
-static void monomial_crt_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
-    polymul_monomial_crt(c, a, b, n, q);
+static void crt_polymul_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
+    polymul_crt_polymul(c, a, b, n, q);
 }
 
 static void ntt_wrapper_internal(T* c, const T* a, const T* b, size_t n, T q) {
@@ -74,9 +87,10 @@ static void schoolbook_wrapper_internal(T* c, const T* a, const T* b, size_t n, 
 }
 
 /**
- * @brief Measures the median CPU cycles of an algorithm.
+ * @brief Measures the performance metrics of an algorithm.
  */
-static uint64_t measure_median(mul_func func, T* c, const T* a, const T* b, size_t n, T q) {
+static void measure_stats(mul_func func, T* c, const T* a, const T* b, size_t n, T q, double* min_k,
+                          double* med_k, double* jitter) {
     uint64_t results[ITERATIONS];
 
     // Cache Warming (Dummy Passes)
@@ -88,13 +102,24 @@ static uint64_t measure_median(mul_func func, T* c, const T* a, const T* b, size
     // Timed Measurements
     for (int i = 0; i < ITERATIONS; i++) {
         poly_reset_workspace();
-        uint64_t start = rdtsc();
+        uint64_t start = rdtsc_start();
         func(c, a, b, n, q);
-        results[i] = rdtsc() - start;
+        results[i] = rdtsc_end() - start;
     }
 
     qsort(results, ITERATIONS, sizeof(uint64_t), compare_u64);
-    return results[ITERATIONS / 2];
+
+    *min_k = (double)results[0] / 1000.0;
+    *med_k = (double)results[ITERATIONS / 2] / 1000.0;
+
+    double sum = 0, sum_sq = 0;
+    for (int i = 0; i < ITERATIONS; i++) {
+        double val = (double)results[i] / 1000.0;
+        sum += val;
+        sum_sq += val * val;
+    }
+    double mean = sum / ITERATIONS;
+    *jitter = sqrt(sum_sq / ITERATIONS - mean * mean);
 }
 
 static void run_bench(size_t n, T q, int num_threads) {
@@ -106,28 +131,20 @@ static void run_bench(size_t n, T q, int num_threads) {
     poly_random(b, n, q);
     omp_set_num_threads(num_threads);
 
+    if (num_threads == 1) pin_core(0);
+
     printf("| %4zu | %5d |", n, num_threads);
 
-    // Symmetric Alignment: 1 space + width + 1 space
-    uint64_t cyc;
+    mul_func funcs[] = {schoolbook_wrapper_internal,      karatsuba_wrapper_internal,
+                        toom_cook_bench_wrapper_internal, ntt_wrapper_internal,
+                        crt_polymul_wrapper_internal,     winograd_wrapper_internal};
 
-    cyc = measure_median(schoolbook_wrapper_internal, c, a, b, n, q);
-    printf(" %15.1f |", (double)cyc / 1000.0);
-
-    cyc = measure_median(karatsuba_wrapper_internal, c, a, b, n, q);
-    printf(" %14.1f |", (double)cyc / 1000.0);
-
-    cyc = measure_median(toom4_bench_wrapper_internal, c, a, b, n, q);
-    printf(" %11.1f |", (double)cyc / 1000.0);
-
-    cyc = measure_median(ntt_wrapper_internal, c, a, b, n, q);
-    printf(" %8.1f |", (double)cyc / 1000.0);
-
-    cyc = measure_median(winograd_wrapper_internal, c, a, b, n, q);
-    printf(" %13.1f |", (double)cyc / 1000.0);
-
-    cyc = measure_median(monomial_crt_wrapper_internal, c, a, b, n, q);
-    printf(" %14.1f |\n", (double)cyc / 1000.0);
+    for (int i = 0; i < 6; i++) {
+        double min_k, med_k, jitter;
+        measure_stats(funcs[i], c, a, b, n, q, &min_k, &med_k, &jitter);
+        printf(" %7.1f/%7.1f (+-%5.1f) |", min_k, med_k, jitter);
+    }
+    printf("\n");
 
     free(a);
     free(b);
@@ -139,26 +156,28 @@ int main(void) {
     T q = 7681;
     int max_threads = omp_get_max_threads();
 
-    printf("# LatticeMath-x64 Robust Performance Benchmark (q=%d)\n", q);
-    printf("Methodology: Median of %d iterations with %d warm-up passes.\n", ITERATIONS, WARMUP);
+    printf("# LatticeMath-x64 Shielded Performance Benchmark (q=%d)\n", q);
+    printf("Methodology: Min/Median (+-StdDev) of %d iterations. RDTSCP Serialized.\n", ITERATIONS);
     printf("Metric: CPU Kilocycles (kCyc) - Frequency Independent.\n\n");
 
     printf(
-        "|  n   | Cores | Schoolbook (kC) | Karatsuba (kC) | Toom-4 (kC) | NTT (kC) | Winograd (kC) | "
-        "Monomial (kC) "
-        "|\n");
+        "|  n   | Cores |   Schoolbook (Min/Med)    |    Karatsuba (Min/Med)    |    Toom-Cook "
+        "(Min/Med)    |       NTT (Min/Med)       |    CRT-Poly (Min/Med)     |    Winograd (Min/Med)   "
+        "  |\n");
     printf(
-        "|:----:|:-----:|:---------------:|:--------------:|:-----------:|:--------:|:-------------:|:--"
-        "------------:|"
-        "\n");
+        "|      |       |    Min / Med / Jitter     |    Min / Med / Jitter     |    Min / Med / Jitter "
+        "    |    Min / Med / Jitter     |    Min / Med / Jitter     |    Min / Med / Jitter     |\n");
+    printf(
+        "|:----:|:-----:|:-------------------------:|:-------------------------:|:----------------------"
+        "---:|:-------------------------:|:-------------------------:|:-------------------------:|\n");
 
     for (int i = 0; i < 4; i++) {
         run_bench(sizes[i], q, 1);
         if (max_threads > 1) run_bench(sizes[i], q, max_threads);
         printf(
-            "|------|-------|-----------------|----------------|-------------|----------|---------------"
-            "|----------------"
-            "|\n");
+            "|------|-------|---------------------------|---------------------------|-------------------"
+            "--------|---------------------------|---------------------------|--------------------------"
+            "-|\n");
     }
     return 0;
 }
