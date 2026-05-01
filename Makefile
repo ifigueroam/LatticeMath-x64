@@ -49,4 +49,4 @@ $(TESTDIR)/test_00-benchmark: $(SCRIPTDIR)/00-benchmark.c $(SOURCES) $(HEADERS)
 	$(SCRIPTDIR)/03-toom-cook.c $(SCRIPTDIR)/04-ntt.c $(SCRIPTDIR)/05-crt-polymul.c $(SCRIPTDIR)/06-winograd.c $(SOURCES) \
 	-D_16BIT_COEFFICIENTS -DBENCHMARK -lm
 clean:
-	$(RM) $(TESTS) $(TESTDIR)/*.o
+	$(RM) $(TESTS) $(TESTDIR)/test_* $(TESTDIR)/*.o
