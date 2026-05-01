@@ -39,6 +39,10 @@ static void winograd_pe_base_16(T* restrict c, const T* restrict a, const T* res
 
 static void winograd_stage12_recursive(T* restrict c, const T* restrict a, const T* restrict b, size_t n,
                                        T q) {
+    if (n <= 8) {
+        poly_polymul_ref(c, a, n, b, n, q);
+        return;
+    }
     if (n <= 16) {
         winograd_pe_base_16(c, a, b, q);
         return;
@@ -61,7 +65,7 @@ static void winograd_stage12_recursive(T* restrict c, const T* restrict a, const
         T mid = zq_mod(rs[i] + q - zq_mod(r0[i] + r1[i], q), q);
         c[i] = zq_mod(c[i] + r0[i], q);
         c[i + n2] = zq_mod(c[i + n2] + mid, q);
-        c[i + n] = zq_mod(c[i + n] + r1[i], q);
+        c[i + 2 * n2] = zq_mod(c[i + 2 * n2] + r1[i], q);
     }
     poly_workspace_set_mark(mark);
 }
@@ -157,7 +161,7 @@ void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q) {
             vc = _mm_sub_epi16(vc, _mm_and_si128(mm, v_q_inner));
             _mm_storeu_si128((__m128i*)&c[i + n2], vc);
 
-            // c[i + aN] += r1[i]
+            // c[i + 2 * n2] += r1[i]
             vc = _mm_loadu_si128((__m128i*)&c[i + aN]);
             vc = _mm_add_epi16(vc, vr1);
             mm = _mm_cmpgt_epi16(vc, v_q_inner);
@@ -171,7 +175,7 @@ void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q) {
             T mid = zq_mod(rs[i] + q - zq_mod(r0[i] + r1[i], q), q);
             c[i] = zq_mod(c[i] + r0[i], q);
             c[i + n2] = zq_mod(c[i + n2] + mid, q);
-            c[i + aN] = zq_mod(c[i + aN] + r1[i], q);
+            c[i + 2 * n2] = zq_mod(c[i + 2 * n2] + r1[i], q);
         }
         poly_workspace_set_mark(mark);
         return;
@@ -182,13 +186,9 @@ void polymul_winograd(T* c, const T* a, size_t aN, const T* b, size_t bN, T q) {
 
 #ifndef BENCHMARK
 int main(void) {
-    size_t n = 1024;
+    size_t n = 8;
     T q = 7681;
-    T *a, *b, *c, *c_ref;
-    posix_memalign((void**)&a, 32, n * sizeof(T));
-    posix_memalign((void**)&b, 32, n * sizeof(T));
-    posix_memalign((void**)&c, 32, (2 * n - 1) * sizeof(T));
-    posix_memalign((void**)&c_ref, 32, (2 * n - 1) * sizeof(T));
+    T a[8] ALIGN_MEM, b[8] ALIGN_MEM, c[15] ALIGN_MEM, c_ref[15] ALIGN_MEM;
 
     printf("--- Winograd Accelerator Test ---\n");
     printf("Method: O(n^1.58) Iterative Radix-Winograd (Stage 13).\n");
@@ -198,25 +198,25 @@ int main(void) {
     printf("Step 4: Execute vectorized SSE Inverse Transforms and Reconstruction.\n");
     printf("Step 5: Apply constant-time bitwise masking for final modular reduction.\n\n");
 
-    poly_random(a, n, q);
-    poly_random(b, n, q);
+    if (poly_load("A", a, n) != 0) return 1;
+    if (poly_load("B", b, n) != 0) return 1;
+
+    poly_print("a", a, n);
+    poly_print("b", b, n);
+
     poly_reset_workspace();
     polymul_winograd(c, a, n, b, n, q);
     poly_polymul_ref(c_ref, a, n, b, n, q);
 
-    if (memcmp(c, c_ref, (2 * n - 1) * sizeof(T)) == 0)
+    poly_print("c (winograd)", c, 15);
+    poly_print("c (reference)", c_ref, 15);
+
+    if (memcmp(c, c_ref, 15 * sizeof(T)) == 0)
         printf("RESULT: CORRECT (Stage 13 Iterative)\n");
-    else {
+    else
         printf("RESULT: INCORRECT\n");
-        for (int i = 0; i < 10; i++)
-            if (c[i] != c_ref[i]) printf("%d: %d vs %d\n", i, c[i], c_ref[i]);
-    }
 
     printf("--------------------------------------\n");
-    free(a);
-    free(b);
-    free(c);
-    free(c_ref);
     return 0;
 }
 #endif

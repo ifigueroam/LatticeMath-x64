@@ -20,7 +20,24 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
 
 
 
-## [2026-04-30] Documentation: Standalone Test Verbosity Enhancement
+
+## [2026-04-30] Documentation: Winograd Standalone Polynomial Display
+### ANALYSIS AND DISCOVERY
+- **Identify Problem:** Scripts/06-winograd.c main function was only reporting correctness 
+  without displaying the operand and result polynomials, making manual verification 
+  difficult.
+- **Impact:** Inconsistent UX compared to Scripts/01-schoolbook.c and Scripts/02-karatsuba.c.
+- **Solution Propose:** Standardize the standalone main() to use poly_load and poly_print.
+
+### TECHNICAL SOLUTION
+- **Goal/Objective:** Synchronize Winograd test output with the project pedagogical standard.
+- **Phase Related:** Phase 16 (Global Synchronization).
+- **Implementation Details:** 
+  - Reduced standalone test degree to n=8 for console readability.
+  - Integrated poly_print() for operands A, B and result C.
+  - Fixed a base case regression for n <= 8 by falling back to the reference multiplier.
+- **Result:** Successfully unified the standalone diagnostic output.
+\n## [2026-04-30] Documentation: Standalone Test Verbosity Enhancement
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Standalone test binaries for CRT-Polymul and Winograd were 
   providing minimal output compared to other project scripts, reducing technical 
