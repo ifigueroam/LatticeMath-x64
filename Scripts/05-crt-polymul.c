@@ -350,21 +350,35 @@ int main(void) {
     size_t n = 8;
     T q = 7681;
     T a[8] ALIGN_MEM, b[8] ALIGN_MEM, c[15] ALIGN_MEM, c_ref[15] ALIGN_MEM;
+
     printf("--- CRT Polynomial Multiplication (Phase 22) ---\n");
-    printf("Method: TCHES 2025 Stage 3 Peak Efficiency.\n\n");
+    printf("Method: TCHES 2025 Stage 3 Peak Efficiency (Monomial Factor CRT).\n");
+    printf("Step 1: Partition polynomial degree n into main ring size n_main and residual size n_low.\n");
+    printf("Step 2: Map inputs to the main cyclic ring x^n_main - 1 using Ruritanian permutations.\n");
+    printf("Step 3: Perform 2D Incomplete NTT on both polynomials (Good-Thomas decomposition).\n");
+    printf("Step 4: Execute weighted 16x16 point-wise convolutions in the transform domain.\n");
+    printf("Step 5: Perform inverse 2D Incomplete NTT to recover the main-ring product.\n");
+    printf("Step 6: Recursively compute the residual product for n_low using SIMD Karatsuba.\n");
+    printf("Step 7: Reconcile final coefficients via overlap-add and wrap-around subtraction.\n\n");
+
     if (poly_load("A", a, n) != 0) return 1;
     if (poly_load("B", b, n) != 0) return 1;
+
     poly_print("a", a, n);
     poly_print("b", b, n);
+
     poly_reset_workspace();
     polymul_crt_polymul(c, a, b, n, q);
     poly_polymul_ref(c_ref, a, n, b, n, q);
+
     poly_print("c (crt-polymul)", c, 15);
     poly_print("c (reference)", c_ref, 15);
+
     if (memcmp(c, c_ref, 15 * sizeof(T)) == 0)
         printf("RESULT: CORRECT\n");
     else
         printf("RESULT: INCORRECT\n");
+
     printf("--------------------------------------\n");
     return 0;
 }

@@ -19,7 +19,26 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
 
 
 
-## [2026-04-30] Infrastructure: Makefile Optimization & Test Artifact Cleanup
+
+## [2026-04-30] Documentation: Standalone Test Verbosity Enhancement
+### ANALYSIS AND DISCOVERY
+- **Identify Problem:** Standalone test binaries for CRT-Polymul and Winograd were 
+  providing minimal output compared to other project scripts, reducing technical 
+  transparency for researchers.
+- **Impact:** Inconsistent logging across the algorithmic tier.
+- **Solution Propose:** Standardize the main() function output to print descriptive 
+  phases and steps of the underlying mathematical algorithm.
+
+### TECHNICAL SOLUTION
+- **Goal/Objective:** Unify standalone test feedback.
+- **Phase Related:** Phase 16 (Global Synchronization).
+- **Reasoning:** Verbose step-by-step logs facilitate debugging and pedagogical 
+  understanding of complex multipliers like the Monomial CRT.
+- **Implementation Details:** Updated Scripts/05-crt-polymul.c and Scripts/06-winograd.c 
+  main functions with descriptive step-by-step console logs.
+- **Result:** Standalone execution now provides a clear technical roadmap of the 
+  multiplication process.
+\n## [2026-04-30] Infrastructure: Makefile Optimization & Test Artifact Cleanup
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** The build system was leaving redundant and legacy test binaries 
   (`test_03-toom`, `test_05-winograd`, `test_06-monomial`) in the `Testing/` directory 

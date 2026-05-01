@@ -189,11 +189,21 @@ int main(void) {
     posix_memalign((void**)&b, 32, n * sizeof(T));
     posix_memalign((void**)&c, 32, (2 * n - 1) * sizeof(T));
     posix_memalign((void**)&c_ref, 32, (2 * n - 1) * sizeof(T));
+
+    printf("--- Winograd Accelerator Test ---\n");
+    printf("Method: O(n^1.58) Iterative Radix-Winograd (Stage 13).\n");
+    printf("Step 1: Partition inputs into 2-D blocks suitable for hardware-emulated PEs.\n");
+    printf("Step 2: Apply iterative Radix-4 Forward Transforms (unrolled Level-0).\n");
+    printf("Step 3: Perform point-wise Hadamard products in the transform domain.\n");
+    printf("Step 4: Execute vectorized SSE Inverse Transforms and Reconstruction.\n");
+    printf("Step 5: Apply constant-time bitwise masking for final modular reduction.\n\n");
+
     poly_random(a, n, q);
     poly_random(b, n, q);
     poly_reset_workspace();
     polymul_winograd(c, a, n, b, n, q);
     poly_polymul_ref(c_ref, a, n, b, n, q);
+
     if (memcmp(c, c_ref, (2 * n - 1) * sizeof(T)) == 0)
         printf("RESULT: CORRECT (Stage 13 Iterative)\n");
     else {
@@ -201,6 +211,8 @@ int main(void) {
         for (int i = 0; i < 10; i++)
             if (c[i] != c_ref[i]) printf("%d: %d vs %d\n", i, c[i], c_ref[i]);
     }
+
+    printf("--------------------------------------\n");
     free(a);
     free(b);
     free(c);
