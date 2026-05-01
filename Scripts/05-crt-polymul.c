@@ -142,6 +142,10 @@ static void ntt_matrix_incomplete(T* a, size_t n, T q, const T* tw) {
         return;
     }
 
+#ifndef BENCHMARK
+    printf("  [NTT] Stage 3: Performing 2D Good-Thomas Decomposition (n1=%zu, n2=%zu)...\n", n1, n2);
+#endif
+
     size_t mark = poly_workspace_get_mark();
     T* tmp = poly_get_workspace(n);
 
@@ -170,7 +174,7 @@ static void ntt_matrix_incomplete(T* a, size_t n, T q, const T* tw) {
             // Generic N1 for 15
             for (size_t j = 0; j < n1; j++) {
                 T sum[16] = {0};
-                for (size_t mm = 0; m < n1; mm++) {
+                for (size_t mm = 0; mm < n1; mm++) {
                     T w = tw[(j * mm * (n / n1)) % n];
                     for (int i = 0; i < 16; i++)
                         sum[i] = zq_mod(sum[i] + (T2)tmp[(mm * n2 + col) * k + i] * w, q);
@@ -219,6 +223,10 @@ static void intt_matrix_incomplete(T* a, size_t n, T q, const T* itw) {
         intt_optimized_portable(a, n, q, itw);
         return;
     }
+
+#ifndef BENCHMARK
+    printf("  [iNTT] Stage 5: Performing Inverse 2D Good-Thomas Decomposition...\n");
+#endif
 
     size_t mark = poly_workspace_get_mark();
     T* tmp = poly_get_workspace(n);
@@ -294,6 +302,9 @@ static void polymul_ring_cyclic_dynamic(T* c_main, const T* a, const T* b, size_
     ntt_matrix_incomplete(fa, M, q, tw_main);
     ntt_matrix_incomplete(fb, M, q, tw_main);
 
+#ifndef BENCHMARK
+    printf("  [Hadamard] Stage 4: Executing weighted 16x16 point-wise convolutions...\n");
+#endif
     for (size_t i = 0; i < M / 16; i++) {
         T w = tw_main[i * (M / (M / 16))];
         weighted_mul_16(&fa[i * 16], &fa[i * 16], &fb[i * 16], w, q);
@@ -306,14 +317,24 @@ static void polymul_ring_cyclic_dynamic(T* c_main, const T* a, const T* b, size_
 
 void polymul_crt_polymul(T* c, const T* a, const T* b, size_t n, T q) {
     MonomialParams p = get_params(n);
+#ifndef BENCHMARK
+    printf("[CRT] Stage 1: Partitioning degree %zu (n_main=%zu, n_low=%zu)...\n", n, p.n_main,
+           p.n_low);
+#endif
     size_t mark = poly_workspace_get_mark();
     T *c_main = poly_get_workspace(p.n_main), *c_low = poly_get_workspace(p.n_low);
     memset(c_main, 0, p.n_main * sizeof(T));
     if (p.n_low > 0) memset(c_low, 0, p.n_low * sizeof(T));
 
+#ifndef BENCHMARK
+    printf("[CRT] Stage 2: Mapping to main cyclic ring x^%zu - 1...\n", p.n_main);
+#endif
     polymul_ring_cyclic_dynamic(c_main, a, b, n, p.n_main, q);
 
     if (p.n_low > 0) {
+#ifndef BENCHMARK
+        printf("[CRT] Stage 6: Computing residual product for n_low=%zu...\n", p.n_low);
+#endif
         T *la = poly_get_workspace(p.n_low), *lb = poly_get_workspace(p.n_low);
         memset(la, 0, p.n_low * sizeof(T));
         memset(lb, 0, p.n_low * sizeof(T));
@@ -324,6 +345,9 @@ void polymul_crt_polymul(T* c, const T* a, const T* b, size_t n, T q) {
         memcpy(c_low, c_low_full, p.n_low * sizeof(T));
     }
 
+#ifndef BENCHMARK
+    printf("[CRT] Stage 7: Reconciling final coefficients...\n");
+#endif
     // Phase 22: Unrolled Data Movement Loops (Portable)
     size_t out_max = 2 * n - 1;
     if (p.n_low > 0) {
@@ -353,6 +377,7 @@ int main(void) {
 
     printf("--- CRT Polynomial Multiplication (Phase 22) ---\n");
     printf("Method: TCHES 2025 Stage 3 Peak Efficiency (Monomial Factor CRT).\n");
+    printf("Rationale: Bypasses primitive-root constraints using multi-domain mapping.\n");
     printf("Step 1: Partition polynomial degree n into main ring size n_main and residual size n_low.\n");
     printf("Step 2: Map inputs to the main cyclic ring x^n_main - 1 using Ruritanian permutations.\n");
     printf("Step 3: Perform 2D Incomplete NTT on both polynomials (Good-Thomas decomposition).\n");

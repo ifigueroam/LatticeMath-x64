@@ -21,7 +21,28 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
 
 
 
-## [2026-04-30] Documentation: Winograd Standalone Polynomial Display
+
+## [2026-04-30] Documentation: CRT-Polymul Pedagogical Alignment
+### ANALYSIS AND DISCOVERY
+- **Identify Problem:** The standalone test for CRT-Polymul (`test_05-crt-polymul`) was 
+  providing insufficient technical feedback during execution, unlike other framework 
+  multipliers.
+- **Root Cause:** The `main()` function and core transformation kernels lacked conditional 
+  verbose printing for algorithmic phases.
+- **Impact:** Reduced transparency for researchers auditing the multi-domain partitioning 
+  and Good-Thomas decomposition steps.
+- **Solution Propose:** Implement phase-by-phase console logging in `05-crt-polymul.c`, 
+  enabled specifically for non-benchmark runs.
+
+### TECHNICAL SOLUTION
+- **Goal/Objective:** Standardize technical feedback for the framework supremem multiplier.
+- **Phase Related:** Phase 16 (Global Synchronization).
+- **Reasoning:** Verbose logs allow bit-level verification of the Ruritanian permutations and 
+  incomplete NTT blocks.
+- **Implementation Details:** Integrated `printf` blocks into `polymul_crt_polymul` and 
+  decomposition sub-kernels, guarded by `#ifndef BENCHMARK`.
+- **Result:** Successfully unified the UX across the algorithmic tier.
+\n## [2026-04-30] Documentation: Winograd Standalone Polynomial Display
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Scripts/06-winograd.c main function was only reporting correctness 
   without displaying the operand and result polynomials, making manual verification 
