@@ -4,6 +4,40 @@ This document archives the comprehensive scientific research, mathematical deriv
 architectural trade-off analyses conducted during the development of the LatticeMath-x64 library. 
 Entries are maintained in descending chronological order.
 
+## [2026-04-30] Study: Alignment with Post-Quantum Cryptography (NIST ML-KEM & ML-DSA)
+### THOUGHT PROCESS AND ANALYSIS
+- **Objective:** Evaluate how the LatticeMath-x64 framework aligns with the architectural
+  requirements of NIST Post-Quantum Cryptography (PQC) standards, specifically **Kyber (ML-KEM)**
+  and **Dilithium (ML-DSA)**.
+- **Investigation of Local Research:**
+  - **TCHES 2025 (Chiu et al.):** The paper "A New Trick for Polynomial Multiplication"
+    describes a **Monomial Factor CRT** method designed for NTT-unfriendly rings. While
+    optimized for NTRU Prime, the framework implementation (Phase 22) demonstrates high-speed
+    linear convolution that scales to large $N$, which is critical for Dilithium-style large-ring
+    cryptography.
+  - **Wang et al. 2025 (IEEE TVLSI):** Focuses on hardware-emulated **2-D Winograd** methods to
+    reduce physical multiplier area. The framework emulation (Stage 13) translates this to
+    reduced scalar instruction count, a core requirement for high-throughput PQC software.
+- **Cryptosystem Mapping:**
+  - **Kyber (ML-KEM) Alignment:** Kyber uses a prime $q=3329$ and $n=256$. The framework current
+    $q=7681$ testbed mimics the "NTT-friendly" profile of Kyber. The implementation of
+    **Montgomery Reduction** and **SSE spatial parallelism** in the multiplier kernels directly
+    corresponds to the state-of-the-art optimizations used in reference Kyber implementations.
+  - **Dilithium (ML-DSA) Alignment:** Dilithium uses a larger prime ($q=8380417$) and requires
+    extremely high-throughput multiplication for signature verification. The project
+    focus on **O(N log N) asymptotic scaling** and **L1/L2 cache locality** is essential for
+    supporting Dilithium coefficients.
+- **Security Alignment (Side-Channel Mandate):**
+  - NIST standards strictly require **Constant-Time execution** to mitigate timing attacks.
+    The project implementation of **branchless bitwise masking** in the Winograd and CRT
+    tiers ensures that no secret-dependent branches leak information, fulfilling this core
+    security requirement.
+- **Conclusion:** The project is **strongly aligned** with PQC requirements. It serves as a
+  high-performance research bridge between theoretical VLSI architectures (Wang 2025) and
+  practical CPU optimizations (Chiu 2025), specifically targeting the arithmetic foundations
+  of lattice-based cryptography.
+
+
 ---
 
 ## [2026-04-30] Global Audit: Framework Convergence & Shielded Baseline

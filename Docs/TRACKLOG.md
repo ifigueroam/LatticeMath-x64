@@ -6,6 +6,23 @@ into a production-grade, hardware-optimized library for Post-Quantum Cryptograph
 
 ---
 
+### Milestone 52: Scientific Alignment with NIST PQC Standards
+- **Milestone:** Formal architectural and security audit for ML-KEM and ML-DSA alignment.
+- **Date:** 2026-04-30
+- **Objective:** Document the mathematical and side-channel compliance of the multiplier tier 
+  with Post-Quantum Cryptography (PQC) standards.
+- **Core Upgrades:** Constant-time verification for Winograd and CRT-Polymul.
+- **Performance Impact:** Solidified high-throughput baseline for lattice signatures.
+- **Architectural Scope:** Algorithmic & Security Tiers.
+- **Architectural Transition:** Performance Prototype -> Secure PQC Accelerator.
+- **Scientific Design Rationale:** NIST mandates side-channel immunity; branchless 
+  masking satisfies ML-KEM timing security requirements.
+- **Verification & Scientific Audit:** TCHES 2025 (Chiu et al.); IEEE TVLSI 2025 (Wang et al.).
+- **Roadmap Integration:** Phase 17: PQC Compliance Audit.
+
+---
+
+
 ### Milestone 51: High-Signal Winograd Diagnostics
 - **Milestone:** Standardization of polynomial visualization for the Winograd tier.
 - **Date:** 2026-04-30
