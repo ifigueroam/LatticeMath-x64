@@ -5,6 +5,136 @@ decisions made during the development of the LatticeMath-x64 framework. Entries 
 maintained in descending chronological order.
 
 ---
+## Research Plan Adopted: 2026-04-30
+Source: pqc-alignment-research.md
+
+# Research Plan: Post-Quantum Cryptography Alignment (Phase 17)
+
+## Objective
+To formally analyze and document how the LatticeMath-x64 framework aligns with the architectural and mathematical requirements of NIST Post-Quantum Cryptography (PQC) standards, specifically focusing on **Kyber (ML-KEM)** and **Dilithium (ML-DSA)**.
+
+## 1. Mathematical Alignment
+- **Thesis:** PQC relies on the hardness of Lattice problems (LWE/RLWE). The core computational bottleneck is polynomial multiplication over finite fields ($Z_q[x]/\Phi_n(x)$).
+- **Kyber Mapping:** Kyber uses $q=3329$ and $n=256$. The framework current utilization of **Montgomery Reduction** (Phase 5) is the industry standard for this specific modulus, as it replaces high-latency divisions with low-word multiplications and shifts.
+- **Dilithium Mapping:** Dilithium uses a large prime $q=8380417$ and requires extremely high-throughput multiplication for signature verification. The framework **Stage 4 CRT-Polymul** ($O(n \log n)$) provides the necessary asymptotic scaling to handle Dilithium-scale polynomials.
+
+## 2. Security Alignment (Side-Channel Mitigation)
+- **Thesis:** PQC implementations must be **Constant-Time** to prevent timing side-channel attacks.
+- **Implementation:** Stage 13 Iterative Winograd and Phase 22 CRT-Polymul utilize strictly **branchless bitwise masking** for all modular reductions and cyclic folds. This ensures that the execution path and memory access patterns are independent of the secret coefficient values.
+
+## 3. Hardware Alignment (Instruction-Level Parallelism)
+- **Thesis:** High-performance PQC requires exploitation of spatial parallelism (SIMD).
+- **Implementation:** The framework's **Hardware Tier** (SSE4.2/AVX2) provides 8-way to 16-way spatial scaling, directly mirroring the optimizations found in high-performance ML-KEM libraries like **PQClean** and **libjade**.
+
+## 4. Evaluation & Conclusion
+- **Status:** The project is **strongly aligned** with PQC requirements.
+- **Rationale:** It successfully implements the three essential pillars of PQC arithmetic: quasi-linear complexity ($O(n \log n)$), hardware-accelerated reduction (Montgomery), and side-channel immunity (Constant-Time).
+
+## Execution
+Upon agreement, this research will be archived in `Research/RESEARCH.md` and `Research/ROADMAP.md` as part of the Phase 17 PQC Audit.
+
+
+---
+
+## Research Plan Adopted: 2026-04-30
+Source: winograd-stage14-roadmap.md
+
+# Research Plan: Stage 14 Separable Tensorized Winograd (The Software-Hardware Bridge)
+
+## Objective
+To further optimize `Scripts/06-winograd.c` by transitioning from a recursive "Mixed-Radix" structure to a true **Separable Tensorized 2-D Winograd** model. This architectural shift aims to reduce complexity from $O(n^{1.58})$ to approximately $O(n^{1.29})$ for large $n$, while eliminating the "Sequential Stride Penalty" identified in Phase 15.
+
+## 1. Analysis of Current Bottlenecks (Stage 13)
+- **Recursive Overhead:** Even with one unrolled level, the algorithm relies on 10 levels of recursion for $n=1024$. Each level introduces stack traffic and non-deterministic cache access.
+- **Instruction-Bound Transformations:** The forward and inverse transformations are currently applied iteratively to memory. This causes the CPU to stall on load-use dependencies.
+- **Data Expansion Spillage:** Winograd's natural data expansion ($3 \to 5$ points) is currently managed in the scratchpad arena, but the depth of recursion causes the total footprint to exceed the L1 cache ($32\text{ KB}$).
+
+## 2. New Architectural Approach: Separable Tensor Transformation
+The 2-D Winograd convolution $F(m \times m, r \times r)$ is mathematically **separable**. A 2-D convolution can be computed as:
+$$C = A^T \{ [ (G a G^T) \odot (G b G^T) ] \} A$$
+In software, this means we can:
+1. Reshape the 1-D polynomial ($n=1024$) into a $32 \times 32$ matrix.
+2. Apply 1-D Winograd transforms to the 32 rows.
+3. Transpose the matrix using SIMD shuffles.
+4. Apply 1-D Winograd transforms to the 32 columns (now rows).
+5. Perform the point-wise product.
+6. Reverse the process.
+
+### Benefits
+- **Complexity:** Reduces the number of operations to $O(n \cdot \sqrt{n})$ or better.
+- **Cache Locality:** The $32 \times 32$ matrix ($2\text{ KB}$) fits entirely within the L1 cache, ensuring **zero** memory thrashing during the transform phase.
+- **Parallelism:** 32 rows can be processed as 4 batches of 8-way SSE transforms.
+
+## 3. Proposed Implementation Changes
+
+### A. Functions to Replace/Refactor
+- **`polymul_winograd`**: Replace the recursive dispatcher with a 3-pass iterative driver (Forward Pass -> Hadamard -> Inverse Pass).
+- **`winograd_stage12_recursive`**: Remove entirely.
+- **`winograd_fwd_transform_sse`**: New function implementing the 1-D Winograd forward matrix $G$ using manual SSE unrolling.
+- **`winograd_inv_transform_sse`**: New function implementing the inverse matrix $A^T$.
+
+### B. Code Statements to Optimize
+- **SIMD Transposition:** Implement an in-cache $8 \times 8$ or $32 \times 32$ transpose using `_mm_unpacklo_epi16` and `_mm_unpackhi_epi16`. This avoids the expensive $O(n^2)$ scalar matrix copy.
+- **Fused Modular Multiplier:** Fuse the point-wise Montgomery reduction directly into the 1-D inverse pass to minimize register pressure.
+
+## 4. Expected Performance
+Stage 14 is projected to reduce the cycle count for $n=1024$ from **~1028 kCyc** to **~750-850 kCyc**, significantly narrowing the gap with the CRT-Polymul tier.
+
+## Execution
+1. **Phase 0: Proof of Concept (PoC) Validation:** Create `Scripts/06-winograd-poc.c` to implement a $16 \times 16$ separable kernel for $n=256$. Measure the cycle-latency of 1-D vectorized transforms and in-register SIMD transpositions.
+2. **Phase 1: Separable Tensor Driver:** Refactor `polymul_winograd` in `06-winograd.c` into a 3-pass driver (Forward Pass -> Hadamard -> Inverse Pass).
+3. **Formal Logging:** Update the research logs and finalize documentation.
+
+
+---
+
+## Research Plan Adopted: 2026-04-30
+Source: benchmark-shield-plan.md
+
+# Implementation Plan: High-Fidelity Benchmarking Shield (Phase 16)
+
+## Objective
+To transition the LatticeMath-x64 benchmarking suite from a "statistical median" model to a "laboratory-grade" shielded execution model. This will minimize OS interference, eliminate instruction reordering noise, and provide high-fidelity telemetry for instruction-level optimizations.
+
+## 1. Code-Level Enhancements (Arithmetic/Timing Tier)
+
+### A. Serialized RDTSCP (`BaseLib/common.h`)
+- **Action:** Replace the basic `rdtsc` asm block with a serialized `rdtscp` + `cpuid` fence.
+- **Rationale:** Standard `rdtsc` is non-serializing; the CPU can execute the measured function outside the timing window. `rdtscp` ensures that all previous instructions have retired, and `cpuid` (or similar) ensures that the subsequent instructions do not start until the timer is read.
+
+### B. Core Affinity (Pinning)
+- **Action:** Add a `poly_bench_pin_core(int core_id)` function using `sched_setaffinity`.
+- **Rationale:** Prevent the OS scheduler from migrating threads between cores, which causes L1/L2 cache flushes and destroyed locality.
+
+### C. Advanced Statistics Grid
+- **Action:** Update `Scripts/00-benchmark.c` to report:
+  - **Min (kCyc):** The "cleanest" possible run.
+  - **Median (kCyc):** Existing robust metric.
+  - **Jitter (StdDev):** Quantifies OS interference.
+  - **Overhead %:** Percentage of total time spent in context switches/interrupts (estimated).
+
+## 2. System-Level Shielding (`Tools/bench_shield.sh`)
+
+### A. Power Management Control
+- **Action:** Set `scaling_governor` to `performance`.
+- **Action:** Disable Intel Turbo Boost / AMD Precision Boost (if possible).
+- **Rationale:** Eliminate frequency scaling (DVFS) as a variable.
+
+### B. Process Shielding
+- **Action:** Execute the benchmark via `nice -n -20` to minimize preemption.
+- **Action:** Use `taskset` to bind the entire suite to a specific physical core.
+
+## 3. Verification & Metrics
+- **Test:** Run the benchmark on a "dirty" system (normal usage) vs. a "shielded" system.
+- **Success Criteria:** Standard Deviation (Jitter) reduced by at least 50% on the shielded system.
+
+## 4. Documentation (Scientific Audit)
+- Log the "Benchmarking Shield" methodology in `Research/RESEARCH.md`.
+- Update the `README.md` with instructions on how to use the high-fidelity shield.
+
+
+---
+
 
 ## Research Plan Adopted: 2026-04-29
 Source: final-audit-plan.md

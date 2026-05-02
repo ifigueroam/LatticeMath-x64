@@ -42,7 +42,8 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
 - **Implementation Details:** Integrated `printf` blocks into `polymul_crt_polymul` and 
   decomposition sub-kernels, guarded by `#ifndef BENCHMARK`.
 - **Result:** Successfully unified the UX across the algorithmic tier.
-\n## [2026-04-30] Documentation: Winograd Standalone Polynomial Display
+
+## [2026-04-30] Documentation: Winograd Standalone Polynomial Display
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Scripts/06-winograd.c main function was only reporting correctness 
   without displaying the operand and result polynomials, making manual verification 
@@ -58,7 +59,8 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
   - Integrated poly_print() for operands A, B and result C.
   - Fixed a base case regression for n <= 8 by falling back to the reference multiplier.
 - **Result:** Successfully unified the standalone diagnostic output.
-\n## [2026-04-30] Documentation: Standalone Test Verbosity Enhancement
+
+## [2026-04-30] Documentation: Standalone Test Verbosity Enhancement
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Standalone test binaries for CRT-Polymul and Winograd were 
   providing minimal output compared to other project scripts, reducing technical 
@@ -76,7 +78,8 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
   main functions with descriptive step-by-step console logs.
 - **Result:** Standalone execution now provides a clear technical roadmap of the 
   multiplication process.
-\n## [2026-04-30] Infrastructure: Makefile Optimization & Test Artifact Cleanup
+
+## [2026-04-30] Infrastructure: Makefile Optimization & Test Artifact Cleanup
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** The build system was leaving redundant and legacy test binaries 
   (`test_03-toom`, `test_05-winograd`, `test_06-monomial`) in the `Testing/` directory 
@@ -97,7 +100,8 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
   $(TESTDIR)/*.o`.
 - **Result:** Successfully cleared all redundant binaries. Verified `test_05-crt-polymul` and 
   `test_06-winograd` for 100% bit-level accuracy.
-\n## [2026-04-30] Milestone: Global Project Synchronization (Production State)
+
+## [2026-04-30] Milestone: Global Project Synchronization (Production State)
 ### ANALYSIS AND DISCOVERY
 - **Discovery:** Identified that the framework has reached a state of "High-Precision Observability." 
   All multiplication kernels are now auditable at the cycle level.
@@ -124,7 +128,8 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
 - **Discovery:** Identified that the framework has reached a state of "High-Precision Observability." 
   All multiplication kernels are now auditable at the cycle level.
 - **Solution:** Standardized the documentation structure across all scientific and historical logs.
-\n## [2026-04-29] Infrastructure: Laboratory-Grade Benchmarking Shield
+
+## [2026-04-29] Infrastructure: Laboratory-Grade Benchmarking Shield
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Existing benchmarks showed ~10-15% variance in cycle counts 
   on identical hardware, complicating the audit of sub-cycle optimizations.
@@ -150,7 +155,8 @@ library for Post-Quantum Cryptography (PQC). Entries are listed in descending ch
 ### SCIENTIFIC REFERENCES
 Intel Corporation. (2014). *How to Benchmark Code Execution Times on Intel IA-32 and IA-64 
 Instruction Set Architectures*.
-\n## [2026-04-29] Final Study: The CRT vs. Winograd Performance Divergence
+
+## [2026-04-29] Final Study: The CRT vs. Winograd Performance Divergence
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Explaining the definitive performance gap between the Monomial Factor 
   CRT multiplier and the 2-D Winograd multiplier.
@@ -175,7 +181,8 @@ Instruction Set Architectures*.
 ### SCIENTIFIC REFERENCES
 Chiu, C.-M., et al. (2025). Monomial factor CRT. *TCHES 2025*.
 Wang, Z., et al. (2025). 2-D Winograd. *IEEE TVLSI*.
-\n## [2026-04-29] Optimization: Iterative Radix-Winograd & Crossover Analysis
+
+## [2026-04-29] Optimization: Iterative Radix-Winograd & Crossover Analysis
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Performance results for 2-D Winograd (Stage 9) showed a sharp 
   decline at n=512 and n=1024 compared to CRT-Polymul and NTT.
@@ -202,7 +209,8 @@ Wang, Z., et al. (2025). 2-D Winograd. *IEEE TVLSI*.
 ### SCIENTIFIC REFERENCES
 Chiu, C.-M., et al. (2025). Monomial factor CRT. *TCHES 2025*.
 Wang, Z., et al. (2025). 2-D Winograd. *IEEE TVLSI*.
-\n## [2026-04-29] Implementation: Superscalar Winograd & Spatial PE Emulation
+
+## [2026-04-29] Implementation: Superscalar Winograd & Spatial PE Emulation
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Performance results for 2-D Winograd (Stage 7) remained trapped at 
   recursive-bound speeds, unable to exploit the full hardware width of x64 CPUs.
@@ -225,7 +233,8 @@ Wang, Z., et al. (2025). 2-D Winograd. *IEEE TVLSI*.
 
 ### SCIENTIFIC REFERENCES
 Wang, Z., et al. (2025). *IEEE Transactions on VLSI Systems*.
-\n## [2026-04-28] Implementation: Ultra-Secure Multi-Way Winograd & Base-Case SSE
+
+## [2026-04-28] Implementation: Ultra-Secure Multi-Way Winograd & Base-Case SSE
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Previous Winograd iterations (Stages 4-6) suffered from quadratic 
   scaling (O(n^2)) due to sub-optimal tiling and massive software instruction overhead. 
@@ -253,7 +262,8 @@ Wang, Z., et al. (2025). *IEEE Transactions on VLSI Systems*.
 
 ### SCIENTIFIC REFERENCES
 Wang, Z., et al. (2025). *IEEE Transactions on VLSI Systems*.
-\n## [2026-04-28] Implementation: Final 2-D Winograd Architectural Stabilization
+
+## [2026-04-28] Implementation: Final 2-D Winograd Architectural Stabilization
 ### ANALYSIS AND DISCOVERY
 - **Identify Problem:** Performance results for 2-D Winograd remained sub-optimal compared to NTT.
 - **Root Cause:** Implementation mismatch; previous iterations used pure convolution instead of 
@@ -923,7 +933,8 @@ Project Documentation Mandate. (2026). *Internal Operating Procedures*.
 - **Identify Problem:** Prime-field NTTs are mathematically unable to perform linear 
   convolution for $n=1024$ in $q=7681$ due to the absence of 2048-th roots of unity.
 - **Root Cause:** $2n-1$ padding requirement exceeds the field's multiplicative order 
-  divisibility ($N \nmid q-1$).
+  divisibility ($N 
+mid q-1$).
 - **Constraint:** Must maintain strict compatibility with the $q=7681$ parameter set 
   without resorting to complex-domain FFT or expansion fields.
 - **Impact:** Previous implementations regressed to $O(n^{1.58})$ Karatsuba for 

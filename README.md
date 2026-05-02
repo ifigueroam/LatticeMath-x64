@@ -11,6 +11,18 @@ custom Montgomery reduction kernels, and static cache-hot memory management.
 
 ---
 
+## Table of Contents
+1. [Project Hierarchy](#project-hierarchy--scientific-audit-trail)
+2. [Surviving Architectural Pillars](#surviving-architectural-pillars)
+3. [Detailed Milestone Timeline](#detailed-milestone-timeline)
+4. [Mathematical Core & Foundations](#mathematical-core--foundations)
+5. [Algorithm Deep-Dive](#algorithm-deep-dive)
+6. [Performance Analysis](#performance-analysis--hardware-telemetry-n1024)
+7. [Configuration & Usage](#configuration--usage)
+8. [Scientific Audit & Lineage](#scientific-audit--lineage)
+
+---
+
 ## Project Hierarchy & Scientific Audit Trail
 ```bash
 LatticeMath-x64/
@@ -68,6 +80,68 @@ performance.
   Domain FFT utilizing FMA3 units.
 - **Impact:** CRT-Polymul established as the supreme multiplier (~250 kCyc for $n=1024$).
 
+### V. Security Tier (Constant-Time Stability)
+- **Objective:** Ensure resistance to timing-based side-channel attacks.
+- **Mechanism:** Strictly branchless data movement and bitwise modular masking.
+- **Impact:** Execution time is independent of polynomial coefficient values.
+
+---
+
+## Detailed Milestone Timeline
+
+### Phase 16: High-Fidelity Shielding & Convergence (April 2026)
+- **Objective:** Eliminate OS noise and establish the project's production baseline.
+- **Architectural Transition:** Shifted from "Statistical Median" to "Shielded Laboratory" metrics.
+- **Mechanism:** Serialized timing fences (`rdtscp` + `cpuid`), core affinity pinning, and 
+  system-level governor lockdown.
+- **Rationale:** Standard RDTSC is susceptible to instruction reordering and frequency scaling; 
+  the shield stabilizes the environment for sub-cycle auditing.
+- **Impact:** Achieved laboratory-grade cycle-accurate telemetry with < 0.5% jitter.
+
+### Phase 14: Global Framework Stabilization (April 2026)
+- **Objective:** Finalize the performance hierarchy and technical rationale for multiplier 
+  supremacy.
+- **Architectural Transition:** Standardized the framework around the $O(n \log n)$ scaling 
+  dominance of CRT-Polymul.
+- **Mechanism:** Refactored algorithmic nomenclature and conducted a cross-analysis of Big-O 
+  complexity versus software instruction pressure.
+- **Rationale:** Butterfly-based transforms minimize instruction pressure and data expansion 
+  compared to recursive Winograd trees.
+- **Impact:** Established a high-fidelity benchmark reference for lattice-based primitives.
+
+### Phase 13: Matrix-Reshaped Matrix Supremacy (April 2026)
+- **Objective:** Maximize data-movement efficiency and reach the absolute theoretical latency floor.
+- **Architectural Transition:** Shifted from "Generalized 1D NTT" to "Specialized 2D Incomplete Matrix 
+  Transform."
+- **Mechanism:** Deployed Good-Thomas 2D decomposition with early-stop size-16 blocks and 
+  Zero-Copy CRT reconstruction.
+- **Rationale:** 2D decomposition minimizes permutation frequency and arithmetic depth.
+- **Impact:** Achieved record-breaking **254.4 kCyc** for $n=1024$.
+
+---
+
+## Mathematical Core & Foundations
+
+The framework operates over the ring $R_q = \mathbb{Z}_q[x] / (x^n + 1)$, where $q = 7681$ is a
+prime chosen for its high density of primitive roots ($7681 = 15 \times 2^9 + 1$). This enables
+efficient Number Theoretic Transforms (NTTs) for degrees up to $n=512$. For higher degrees like
+$n=1024$, the framework utilizes the **Monomial Factor CRT** and **Complex Domain FFT** to bypass
+the primitive root ceiling.
+
+---
+
+## Algorithm Deep-Dive
+
+### 05-CRT-Polymul (Framework Supreme)
+The current performance leader. Based on **TCHES 2025 (Chiu et al.)**, it utilizes a 2D Incomplete
+Matrix Transform to achieve quasi-linear scaling with minimal data movement. It is the most
+architecturally advanced multiplier in the suite.
+
+### 06-Winograd (Iterative Radix-4)
+Implements a 2-D Winograd-based multiplier ($F(3 \times 3, 3 \times 3)$) inspired by **Wang et al.
+(2025)**. Stage 13 utilizes an iterative radix-4 network and vectorized reconstruction to achieve a
+7.3% speedup over recursive variants.
+
 ---
 
 ## Performance Analysis & Hardware Telemetry (n=1024)
@@ -98,9 +172,9 @@ The primary entry point for high-fidelity performance evaluation is the **Shield
 - **Laboratory Grade (Recommended):** `sudo ./Tools/bench_shield.sh`
 - **Output:** Reports metrics in `Min / Med / Jitter` format. Cycle counting is RDTSCP-serialized.
 
-### 3. Customizing Test Vectors
-Modify the `input_config` file in the root directory to test with custom polynomials. The
-framework automatically synchronizes these values across all standalone scripts.
+### 3. Standalone Verification
+Each algorithm provides a standalone executable for bit-level verification and step-by-step logging.
+- **Example:** `./Testing/test_05-crt-polymul` or `./Testing/test_04-ntt`.
 
 ---
 
@@ -108,7 +182,8 @@ framework automatically synchronizes these values across all standalone scripts.
 The LatticeMath-x64 implementation is directly mapped to the following research corpus:
 - **TCHES 2025:** Chiu, C.-M., et al. "A New Trick for Polynomial Multiplication."
 - **IEEE TVLSI 2025:** Wang, Z., et al. "2-D Winograd-Based Divide-and-Conquer Multiplier."
-- **ISSAC:** Bodrato, M., & Zanoni, A. (2007). "Optimal Toom-Cook Interpolation."
+- **ISSAC 2007:** Bodrato, M., & Zanoni, A. "Optimal Toom-Cook Interpolation."
 - **SUPERCOP:** Bernstein & Lange (2020). Performance Benchmarking Standards.
 
-Full technical details and thinking blocks are available in `Research/RESEARCH.md`.
+Full technical details, thought blocks, and hardware-alignment thinking are available in
+`Research/RESEARCH.md`.
