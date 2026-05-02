@@ -13,7 +13,7 @@ __pycache__/
 *.pyc
 
 # Research and Scaffolding
- Research/
+# Research/
 
 .gemini/
 gha-creds-*.json

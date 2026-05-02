@@ -10,7 +10,7 @@ SOURCES=$(SRCDIR)/randombytes.c $(SRCDIR)/poly.c $(SRCDIR)/common.c $(SRCDIR)/zq
 HEADERS=BaseLib/randombytes.h BaseLib/poly.h BaseLib/common.h BaseLib/zq.h
 
 TESTS=$(TESTDIR)/test_01-schoolbook $(TESTDIR)/test_02-karatsuba $(TESTDIR)/test_03-toom-cook \
-      $(TESTDIR)/test_04-ntt $(TESTDIR)/test_05-crt-polymul $(TESTDIR)/test_06-winograd $(TESTDIR)/test_00-benchmark
+      $(TESTDIR)/test_04-ntt $(TESTDIR)/test_05-crt-polymul $(TESTDIR)/test_06-winograd $(TESTDIR)/test_06-winograd-poc $(TESTDIR)/test_00-benchmark
 
 .PHONY: all clean format
 all: $(TESTS)
@@ -42,6 +42,9 @@ $(TESTDIR)/test_05-crt-polymul: $(SCRIPTDIR)/05-crt-polymul.c $(SCRIPTDIR)/02-ka
 	$(CC) $(CFLAGS) -o $@ $(SCRIPTDIR)/05-crt-polymul.c $(TESTDIR)/02-karatsuba.o $(SOURCES) -D_16BIT_COEFFICIENTS -lm
 
 $(TESTDIR)/test_06-winograd: $(SCRIPTDIR)/06-winograd.c $(SOURCES) $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ $< $(SOURCES) -D_16BIT_COEFFICIENTS -lm
+
+$(TESTDIR)/test_06-winograd-poc: $(SCRIPTDIR)/06-winograd-poc.c $(SOURCES) $(HEADERS)
 	$(CC) $(CFLAGS) -o $@ $< $(SOURCES) -D_16BIT_COEFFICIENTS -lm
 
 $(TESTDIR)/test_00-benchmark: $(SCRIPTDIR)/00-benchmark.c $(SOURCES) $(HEADERS)
